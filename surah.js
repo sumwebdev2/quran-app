@@ -585,30 +585,303 @@ async function loadSurah() {
         <i
           data-lucide="wifi-off"
           class="
+async function loadSurah() {
+
+  try {
+
+    console.log("Loading Surah:", surahNumber);
+
+    if (
+      !Number.isInteger(surahNumber) ||
+      surahNumber < 1 ||
+      surahNumber > 114
+    ) {
+      throw new Error(
+        "Invalid Surah number: " + surahNumber
+      );
+    }
+
+
+    /*
+     * Load Arabic and English separately.
+     *
+     * This is more reliable than requesting
+     * multiple editions in one request.
+     */
+
+    const arabicUrl =
+      `${API}/surah/${surahNumber}/quran-uthmani`;
+
+    const englishUrl =
+      `${API}/surah/${surahNumber}/en.asad`;
+
+
+    console.log(
+      "Arabic:",
+      arabicUrl
+    );
+
+    console.log(
+      "English:",
+      englishUrl
+    );
+
+
+    const [
+      arabicResponse,
+      englishResponse
+    ] = await Promise.all([
+
+      fetch(arabicUrl, {
+        method: "GET",
+        cache: "no-cache"
+      }),
+
+      fetch(englishUrl, {
+        method: "GET",
+        cache: "no-cache"
+      })
+
+    ]);
+
+
+    if (!arabicResponse.ok) {
+
+      throw new Error(
+        `Arabic API error: ${arabicResponse.status}`
+      );
+
+    }
+
+
+    if (!englishResponse.ok) {
+
+      throw new Error(
+        `English API error: ${englishResponse.status}`
+      );
+
+    }
+
+
+    const [
+      arabicResult,
+      englishResult
+    ] = await Promise.all([
+
+      arabicResponse.json(),
+
+      englishResponse.json()
+
+    ]);
+
+
+    console.log(
+      "Arabic API result:",
+      arabicResult
+    );
+
+    console.log(
+      "English API result:",
+      englishResult
+    );
+
+
+    if (
+      arabicResult.code !== 200 ||
+      !arabicResult.data
+    ) {
+
+      throw new Error(
+        "Arabic Quran data was not returned."
+      );
+
+    }
+
+
+    if (
+      englishResult.code !== 200 ||
+      !englishResult.data
+    ) {
+
+      throw new Error(
+        "English translation was not returned."
+      );
+
+    }
+
+
+    /*
+     * Save data.
+     */
+
+    surah =
+      arabicResult.data;
+
+    translation =
+      englishResult.data;
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Bismillah is displayed separately.
+     *
+     * Therefore remove it from the first
+     * ayah for Surahs that contain it.
+     *
+     * Al-Fatihah:
+     * keep its actual first ayah.
+     *
+     * At-Tawbah:
+     * has no Bismillah.
+     */
+
+    surah.ayahs.forEach(
+      ayah => {
+
+        ayah.displayText =
+          ayah.text;
+
+      }
+    );
+
+
+    if (
+      surah.number !== 1 &&
+      surah.number !== 9 &&
+      surah.ayahs.length > 0
+    ) {
+
+      surah.ayahs[0].displayText =
+        removeBismillah(
+          surah.ayahs[0].text
+        );
+
+    }
+
+
+    /*
+     * Safety check.
+     */
+
+    if (
+      !surah.ayahs ||
+      !surah.ayahs.length
+    ) {
+
+      throw new Error(
+        "This Surah contains no ayahs."
+      );
+
+    }
+
+
+    /*
+     * Make sure the number of Arabic
+     * and translation ayahs match.
+     */
+
+    console.log(
+      "Arabic ayahs:",
+      surah.ayahs.length
+    );
+
+    console.log(
+      "English ayahs:",
+      translation.ayahs.length
+    );
+
+
+    /*
+     * Update interface.
+     */
+
+    updateTitles();
+
+    renderSurah();
+
+    showPlayer();
+
+    prepareCurrentAudio();
+
+
+    console.log(
+      "Surah loaded successfully:",
+      surah.englishName
+    );
+
+  } catch (error) {
+
+    console.error(
+      "QURAN LOAD ERROR:",
+      error
+    );
+
+
+    content.innerHTML = `
+
+      <div
+        class="
+          py-16
+          text-center
+        "
+      >
+
+        <div
+          class="
             mx-auto
-            h-10
-            w-10
-            text-slate-500
+            grid
+            h-16
+            w-16
+            place-items-center
+            rounded-full
+            bg-red-500/10
+            text-red-400
           "
-        ></i>
+        >
+
+          <i
+            data-lucide="wifi-off"
+            class="h-7 w-7"
+          ></i>
+
+        </div>
+
+
+        <h2
+          class="
+            mt-5
+            text-lg
+            font-bold
+          "
+        >
+          Couldn't load the Surah
+        </h2>
+
 
         <p
           class="
-            mt-4
-            font-semibold
+            mx-auto
+            mt-2
+            max-w-xs
+            text-sm
+            leading-6
+            text-slate-400
           "
         >
-          Couldn't load this Surah
+          Please check your internet connection
+          and try again.
         </p>
+
 
         <button
           id="retryButton"
           type="button"
           class="
-            mt-5
+            mt-6
             rounded-xl
             bg-emerald-500
-            px-5
+            px-6
             py-3
             font-semibold
             text-slate-950
@@ -616,6 +889,19 @@ async function loadSurah() {
         >
           Try Again
         </button>
+
+
+        <p
+          class="
+            mt-5
+            break-all
+            px-5
+            text-[10px]
+            text-slate-600
+          "
+        >
+          ${error.message}
+        </p>
 
       </div>
 
@@ -625,14 +911,20 @@ async function loadSurah() {
     lucide.createIcons();
 
 
-    document
-      .getElementById(
+    const retryButton =
+      document.getElementById(
         "retryButton"
-      )
-      ?.addEventListener(
+      );
+
+
+    if (retryButton) {
+
+      retryButton.addEventListener(
         "click",
         loadSurah
       );
+
+    }
 
   }
 
