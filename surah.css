@@ -1,0 +1,384 @@
+/* =========================================================
+   BASE
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   ARABIC
+========================================================= */
+
+.quran-arabic {
+  font-family: "Amiri", serif;
+
+  direction: rtl;
+
+  text-align: right;
+
+  line-height: 2.25;
+
+  overflow-wrap: anywhere;
+
+  word-break: normal;
+
+  white-space: normal;
+
+  max-width: 100%;
+}
+
+
+/* =========================================================
+   AYAH
+========================================================= */
+
+.ayah {
+  width: 100%;
+
+  max-width: 100%;
+
+  overflow: hidden;
+
+  border: 1px solid transparent;
+
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+
+.ayah.active {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.12),
+      rgba(16, 185, 129, 0.035)
+    );
+
+  border-color:
+    rgba(16, 185, 129, 0.22);
+
+  box-shadow:
+    0 0 35px
+    rgba(16, 185, 129, 0.06);
+}
+
+
+.ayah.active .quran-arabic {
+  color: #6ee7b7;
+}
+
+
+.translation {
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   VINYL DISC
+========================================================= */
+
+.vinyl {
+  position: relative;
+
+  display: grid;
+
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 9999px;
+
+  background:
+    repeating-radial-gradient(
+      circle at center,
+      #111827 0px,
+      #111827 3px,
+      #1f2937 4px,
+      #111827 6px
+    );
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    inset 0 0 0 8px rgba(0, 0, 0, 0.25),
+    inset 0 0 30px rgba(0, 0, 0, 0.8);
+
+  overflow: hidden;
+}
+
+
+.vinyl::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 12%;
+
+  border-radius: 9999px;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.7);
+}
+
+
+.vinyl::after {
+  content: "";
+
+  position: absolute;
+
+  width: 8%;
+
+  height: 8%;
+
+  border-radius: 9999px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #34d399,
+      #059669
+    );
+
+  box-shadow:
+    0 0 10px
+    rgba(16, 185, 129, 0.4);
+}
+
+
+.vinyl-hole {
+  position: absolute;
+
+  z-index: 3;
+
+  width: 14px;
+
+  height: 14px;
+
+  border-radius: 9999px;
+
+  background: #020617;
+
+  border:
+    2px solid
+    rgba(255, 255, 255, 0.08);
+}
+
+
+/* =========================================================
+   VINYL ANIMATION
+========================================================= */
+
+.vinyl.spinning {
+  animation:
+    vinylSpin
+    3s
+    linear
+    infinite;
+}
+
+
+@keyframes vinylSpin {
+
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+
+}
+
+
+/* =========================================================
+   PLAYER
+========================================================= */
+
+#playerSheet {
+  transform:
+    translateY(100%);
+
+  opacity: 0;
+
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+
+#playerSheet.player-open {
+  transform:
+    translateY(0);
+
+  opacity: 1;
+}
+
+
+#playerOverlay {
+  opacity: 0;
+
+  transition:
+    opacity 0.25s ease;
+}
+
+
+#playerOverlay.overlay-open {
+  opacity: 1;
+}
+
+
+/* =========================================================
+   RANGE
+========================================================= */
+
+.quran-range {
+  width: 100%;
+
+  height: 4px;
+
+  appearance: none;
+
+  cursor: pointer;
+
+  border-radius: 9999px;
+
+  background:
+    rgba(255, 255, 255, 0.1);
+
+  outline: none;
+}
+
+
+.quran-range::-webkit-slider-thumb {
+  appearance: none;
+
+  width: 16px;
+
+  height: 16px;
+
+  border-radius: 9999px;
+
+  background: #34d399;
+
+  border: 0;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(52, 211, 153, 0.1);
+}
+
+
+.quran-range::-moz-range-thumb {
+  width: 16px;
+
+  height: 16px;
+
+  border-radius: 9999px;
+
+  background: #34d399;
+
+  border: 0;
+}
+
+
+/* =========================================================
+   SELECT
+========================================================= */
+
+#reciterSelect {
+  color: white;
+
+  cursor: pointer;
+}
+
+
+#reciterSelect option {
+  background: #0f172a;
+
+  color: white;
+}
+
+
+/* =========================================================
+   MOBILE SAFETY
+========================================================= */
+
+button,
+select,
+input {
+  -webkit-tap-highlight-color:
+    transparent;
+}
+
+
+button {
+  touch-action: manipulation;
+}
+
+
+button:active {
+  transform: scale(0.97);
+}
+
+
+/* =========================================================
+   SAFE AREA
+========================================================= */
+
+#playerSheet {
+  padding-bottom:
+    calc(
+      2rem +
+      env(safe-area-inset-bottom)
+    );
+}
+
+
+#audioBar {
+  padding-bottom:
+    calc(
+      0.75rem +
+      env(safe-area-inset-bottom)
+    );
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+::-webkit-scrollbar-thumb {
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  border-radius: 999px;
+}
