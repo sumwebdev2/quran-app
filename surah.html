@@ -23,7 +23,7 @@
   <title>Quran Reader</title>
 
 
-  <!-- Tailwind CSS -->
+  <!-- Tailwind -->
 
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -54,7 +54,7 @@
   </script>
 
 
-  <!-- Arabic Quran Font -->
+  <!-- Arabic font -->
 
   <link
     rel="preconnect"
@@ -73,28 +73,88 @@
   >
 
 
-  <!-- Lucide Icons -->
+  <!-- Lucide -->
 
   <script
     src="https://unpkg.com/lucide@latest"
   ></script>
+
+
+  <style>
+
+    /*
+     * Prevent horizontal overflow.
+     */
+
+    html,
+    body {
+
+      width: 100%;
+
+      max-width: 100%;
+
+      overflow-x: hidden;
+
+    }
+
+
+    /*
+     * Quran Arabic text.
+     */
+
+    .quran-text {
+
+      width: 100%;
+
+      max-width: 100%;
+
+      overflow-wrap: anywhere;
+
+      word-break: normal;
+
+      white-space: normal;
+
+    }
+
+
+    /*
+     * Active ayah.
+     */
+
+    .ayah.active-ayah {
+
+      background:
+        rgba(16, 185, 129, 0.08);
+
+      border-color:
+        rgba(16, 185, 129, 0.25);
+
+      box-shadow:
+        0 0 0 1px
+        rgba(16, 185, 129, 0.15);
+
+    }
+
+  </style>
 
 </head>
 
 
 <body
   class="min-h-screen
+         w-full
+         overflow-x-hidden
          bg-slate-950
          text-white"
 >
 
 
-  <!-- APP -->
-
   <div
     class="mx-auto
            min-h-screen
+           w-full
            max-w-md
+           overflow-x-hidden
            bg-slate-900
            shadow-2xl"
   >
@@ -108,26 +168,26 @@
       class="sticky
              top-0
              z-20
+             w-full
              border-b
              border-white/10
              bg-slate-900/95
-             px-5
+             px-4
              py-4
              backdrop-blur"
     >
 
       <div
         class="flex
+               min-w-0
                items-center
                gap-3"
       >
 
-
-        <!-- BACK -->
-
         <button
           onclick="history.back()"
-          class="rounded-full
+          class="shrink-0
+                 rounded-full
                  border
                  border-white/10
                  bg-white/5
@@ -145,10 +205,9 @@
         </button>
 
 
-        <!-- SURAH TITLE -->
-
         <div
-          class="min-w-0"
+          class="min-w-0
+                 flex-1"
         >
 
           <p
@@ -172,11 +231,9 @@
         </div>
 
 
-        <!-- BOOKMARK -->
-
         <button
           id="surahBookmark"
-          class="ml-auto
+          class="shrink-0
                  rounded-full
                  border
                  border-white/10
@@ -206,12 +263,12 @@
 
     <main
       id="quranContent"
-      class="px-5
-             pb-40
+      class="w-full
+             overflow-x-hidden
+             px-4
+             pb-44
              pt-6"
     >
-
-      <!-- LOADING -->
 
       <div
         class="py-16
@@ -256,16 +313,16 @@
              z-30
              mx-auto
              hidden
+             w-full
              max-w-md
              border-t
              border-white/10
              bg-slate-900/95
-             px-5
-             py-4
+             px-4
+             py-3
              shadow-2xl
              backdrop-blur"
     >
-
 
       <!-- PROGRESS -->
 
@@ -283,8 +340,7 @@
           class="h-full
                  w-0
                  rounded-full
-                 bg-emerald-500
-                 transition-all"
+                 bg-emerald-500"
         ></div>
 
       </div>
@@ -292,12 +348,13 @@
 
       <div
         class="flex
+               min-w-0
                items-center
                gap-3"
       >
 
 
-        <!-- PLAY / PAUSE -->
+        <!-- PLAY -->
 
         <button
           id="playButton"
@@ -312,7 +369,7 @@
                  shadow-lg
                  transition
                  active:scale-95"
-          aria-label="Play Quran"
+          aria-label="Play Surah"
         >
 
           <i
@@ -325,7 +382,7 @@
         </button>
 
 
-        <!-- AUDIO INFORMATION -->
+        <!-- INFORMATION -->
 
         <div
           class="min-w-0
@@ -344,7 +401,8 @@
 
           <p
             id="audioSubtitle"
-            class="text-xs
+            class="truncate
+                   text-xs
                    text-slate-400"
           >
             Mishary Rashid Alafasy
@@ -353,50 +411,73 @@
         </div>
 
 
-        <!-- PLAYLIST -->
+        <!-- PREVIOUS -->
 
         <button
-          id="audioPlaylistButton"
-          class="rounded-full
+          id="previousAyahButton"
+          class="hidden
+                 shrink-0
+                 rounded-full
                  border
                  border-white/10
                  p-2.5
                  text-slate-400
                  transition
                  active:scale-95"
-          aria-label="Audio playlist"
+          aria-label="Previous Ayah"
         >
 
           <i
-            data-lucide="list-music"
-            class="h-5
-                   w-5"
+            data-lucide="skip-back"
+            class="h-5 w-5"
           ></i>
 
         </button>
 
 
-        <!-- MORE -->
+        <!-- NEXT -->
 
         <button
-          id="audioMoreButton"
-          class="rounded-full
+          id="nextAyahButton"
+          class="hidden
+                 shrink-0
+                 rounded-full
                  border
                  border-white/10
                  p-2.5
                  text-slate-400
                  transition
                  active:scale-95"
-          aria-label="Audio options"
+          aria-label="Next Ayah"
         >
 
           <i
-            data-lucide="more-vertical"
-            class="h-5
-                   w-5"
+            data-lucide="skip-forward"
+            class="h-5 w-5"
           ></i>
 
         </button>
+
+      </div>
+
+
+      <!-- TIME -->
+
+      <div
+        class="mt-2
+               flex
+               justify-between
+               text-[11px]
+               text-slate-500"
+      >
+
+        <span id="currentTime">
+          0:00
+        </span>
+
+        <span id="duration">
+          0:00
+        </span>
 
       </div>
 
@@ -406,19 +487,10 @@
   </div>
 
 
-  <!-- =====================================================
-       SCRIPTS
-  ====================================================== -->
-
   <script src="surah.js"></script>
 
 
   <script>
-
-    /*
-     * Initialize Lucide icons that exist
-     * before surah.js renders the Quran.
-     */
 
     lucide.createIcons();
 
