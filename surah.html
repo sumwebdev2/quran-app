@@ -17,19 +17,39 @@
 
   <title>Quran Reader</title>
 
+
+  <!-- Tailwind -->
+
   <script src="https://cdn.tailwindcss.com"></script>
 
+
   <script>
+
     tailwind.config = {
+
       theme: {
+
         extend: {
+
           fontFamily: {
-            arabic: ["Amiri", "serif"]
+
+            arabic: [
+              "Amiri",
+              "serif"
+            ]
+
           }
+
         }
+
       }
+
     };
+
   </script>
+
+
+  <!-- Arabic -->
 
   <link
     rel="preconnect"
@@ -47,374 +67,698 @@
     rel="stylesheet"
   >
 
-  <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link
-    rel="stylesheet"
-    href="surah.css"
-  >
+  <!-- Lucide -->
+
+  <script
+    src="https://unpkg.com/lucide@latest"
+  ></script>
+
+
+  <style>
+
+    html,
+    body {
+
+      width: 100%;
+
+      max-width: 100%;
+
+      overflow-x: hidden;
+
+    }
+
+
+    body {
+
+      margin: 0;
+
+    }
+
+
+    .ayah {
+
+      width: 100%;
+
+      max-width: 100%;
+
+      min-width: 0;
+
+      overflow: hidden;
+
+      border: 1px solid transparent;
+
+      transition:
+        background-color .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease;
+
+    }
+
+
+    .ayah.active {
+
+      background:
+        rgba(16, 185, 129, .09);
+
+      border-color:
+        rgba(16, 185, 129, .35);
+
+      box-shadow:
+        0 0 0 1px
+        rgba(16, 185, 129, .08);
+
+    }
+
+
+    .quran-arabic {
+
+      width: 100%;
+
+      max-width: 100%;
+
+      overflow-wrap: anywhere;
+
+      line-height: 2.35;
+
+    }
+
+
+    .translation {
+
+      width: 100%;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    input[type="range"] {
+
+      accent-color: #10b981;
+
+    }
+
+
+    .player-sheet {
+
+      transform: translateY(100%);
+
+      transition:
+        transform .25s ease;
+
+    }
+
+
+    .player-sheet.open {
+
+      transform: translateY(0);
+
+    }
+
+  </style>
 
 </head>
 
 
-<body class="min-h-screen bg-slate-950 text-white">
+<body
+  class="
+    min-h-screen
+    w-full
+    overflow-x-hidden
+    bg-slate-950
+    text-white
+  "
+>
 
-  <div
+
+<div
+  class="
+    mx-auto
+    min-h-screen
+    w-full
+    max-w-md
+    overflow-x-hidden
+    bg-slate-900
+  "
+>
+
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <header
     class="
-      mx-auto
-      min-h-screen
-      max-w-md
-      overflow-x-hidden
-      bg-slate-900
+      sticky
+      top-0
+      z-20
+      border-b
+      border-white/10
+      bg-slate-900/95
+      px-4
+      py-4
+      backdrop-blur
     "
   >
 
-
-    <!-- HEADER -->
-
-    <header
-      class="
-        sticky
-        top-0
-        z-40
-        border-b
-        border-white/10
-        bg-slate-900/95
-        px-5
-        py-4
-        backdrop-blur-xl
-      "
-    >
-
-      <div class="flex items-center gap-3">
-
-        <button
-          id="backButton"
-          class="
-            grid
-            h-10
-            w-10
-            shrink-0
-            place-items-center
-            rounded-full
-            border
-            border-white/10
-            bg-white/5
-          "
-        >
-          <i data-lucide="arrow-left"></i>
-        </button>
-
-
-        <div class="min-w-0">
-
-          <p
-            class="
-              text-[10px]
-              uppercase
-              tracking-[0.25em]
-              text-emerald-400
-            "
-          >
-            Quran
-          </p>
-
-          <h1
-            id="surahTitle"
-            class="truncate font-bold"
-          >
-            Loading...
-          </h1>
-
-        </div>
-
-
-        <button
-          id="bookmarkButton"
-          class="
-            ml-auto
-            grid
-            h-10
-            w-10
-            place-items-center
-            rounded-full
-            border
-            border-white/10
-            bg-white/5
-          "
-        >
-          <i data-lucide="bookmark"></i>
-        </button>
-
-      </div>
-
-    </header>
-
-
-    <!-- CONTENT -->
-
-    <main
-      id="quranContent"
-      class="px-4 pb-44 pt-5"
-    >
-
-      <div class="py-20 text-center">
-
-        <div
-          class="
-            mx-auto
-            h-9
-            w-9
-            animate-spin
-            rounded-full
-            border-2
-            border-slate-700
-            border-t-emerald-400
-          "
-        ></div>
-
-        <p class="mt-4 text-sm text-slate-400">
-          Loading Surah...
-        </p>
-
-      </div>
-
-    </main>
-
-
-    <!-- MINI PLAYER -->
-
     <div
-      id="audioBar"
       class="
-        fixed
-        bottom-0
-        left-0
-        right-0
-        z-50
-        mx-auto
-        hidden
-        max-w-md
-        border-t
-        border-white/10
-        bg-slate-900/95
-        p-3
-        backdrop-blur-xl
+        flex
+        items-center
+        gap-3
       "
     >
 
-      <div
+      <button
+        onclick="history.back()"
         class="
-          absolute
-          left-0
-          right-0
-          top-0
-          h-0.5
+          shrink-0
+          rounded-full
+          border
+          border-white/10
           bg-white/5
+          p-2.5
         "
       >
 
-        <div
-          id="miniProgress"
-          class="h-full w-0 bg-emerald-400"
-        ></div>
+        <i
+          data-lucide="arrow-left"
+          class="h-5 w-5"
+        ></i>
 
-      </div>
-
-
-      <div class="flex items-center gap-3">
-
-        <button
-          id="openPlayerButton"
-          class="shrink-0"
-        >
-
-          <div
-            id="miniDisc"
-            class="vinyl h-11 w-11"
-          ></div>
-
-        </button>
+      </button>
 
 
-        <button
-          id="openPlayerButton2"
-          class="min-w-0 flex-1 text-left"
-        >
+      <div
+        class="
+          min-w-0
+          flex-1
+        "
+      >
 
-          <p
-            id="audioTitle"
-            class="truncate text-sm font-semibold"
-          >
-            Quran
-          </p>
-
-          <p
-            id="audioSubtitle"
-            class="truncate text-xs text-slate-400"
-          >
-            Mishary Rashid Alafasy
-          </p>
-
-        </button>
-
-
-        <button
-          id="previousAyahButton"
-          class="grid h-9 w-9 place-items-center"
-        >
-          <i data-lucide="skip-back"></i>
-        </button>
-
-
-        <button
-          id="playButton"
+        <p
           class="
-            grid
-            h-11
-            w-11
-            shrink-0
-            place-items-center
-            rounded-full
-            bg-emerald-500
-            text-slate-950
+            text-xs
+            uppercase
+            tracking-widest
+            text-emerald-400
           "
         >
-          <i
-            data-lucide="play"
-            class="fill-current"
-          ></i>
-        </button>
+          Quran
+        </p>
 
 
-        <button
-          id="nextAyahButton"
-          class="grid h-9 w-9 place-items-center"
+        <h1
+          id="surahTitle"
+          class="
+            truncate
+            font-bold
+          "
         >
-          <i data-lucide="skip-forward"></i>
-        </button>
+          Loading...
+        </h1>
 
       </div>
+
+
+      <button
+        id="surahBookmark"
+        class="
+          shrink-0
+          rounded-full
+          border
+          border-white/10
+          bg-white/5
+          p-2.5
+        "
+      >
+
+        <i
+          data-lucide="bookmark"
+          class="h-5 w-5"
+        ></i>
+
+      </button>
 
     </div>
 
+  </header>
 
-    <!-- PLAYER OVERLAY -->
+
+  <!-- =====================================================
+       QURAN
+  ====================================================== -->
+
+  <main
+    id="quranContent"
+    class="
+      w-full
+      overflow-x-hidden
+      px-4
+      pb-48
+      pt-6
+    "
+  >
 
     <div
-      id="playerOverlay"
       class="
-        fixed
-        inset-0
-        z-[70]
-        hidden
-        bg-black/70
-        backdrop-blur-sm
-      "
-    ></div>
-
-
-    <!-- FULL PLAYER -->
-
-    <section
-      id="playerSheet"
-      class="
-        fixed
-        bottom-0
-        left-0
-        right-0
-        z-[80]
-        mx-auto
-        hidden
-        max-w-md
-        rounded-t-[32px]
-        border
-        border-white/10
-        bg-slate-900
-        px-5
-        pb-8
-        pt-4
+        py-16
+        text-center
       "
     >
 
       <div
         class="
           mx-auto
-          mb-4
-          h-1
-          w-12
+          h-9
+          w-9
+          animate-spin
           rounded-full
-          bg-white/20
+          border-2
+          border-slate-600
+          border-t-emerald-400
         "
       ></div>
 
 
-      <div class="flex justify-end">
+      <p
+        class="
+          mt-4
+          text-sm
+          text-slate-400
+        "
+      >
+        Loading Surah...
+      </p>
+
+    </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       MINI PLAYER
+  ====================================================== -->
+
+  <div
+    id="audioBar"
+    class="
+      fixed
+      bottom-0
+      left-0
+      right-0
+      z-40
+      mx-auto
+      hidden
+      w-full
+      max-w-md
+      border-t
+      border-white/10
+      bg-slate-900/95
+      px-4
+      py-3
+      backdrop-blur
+    "
+  >
+
+    <!-- Progress -->
+
+    <input
+      id="seekBar"
+      type="range"
+      min="0"
+      max="100"
+      value="0"
+      step="0.1"
+      class="
+        mb-2
+        h-1
+        w-full
+        cursor-pointer
+      "
+    >
+
+
+    <div
+      class="
+        mb-2
+        flex
+        justify-between
+        text-[10px]
+        text-slate-500
+      "
+    >
+
+      <span id="currentTime">
+        0:00
+      </span>
+
+
+      <span id="remainingTime">
+        -0:00
+      </span>
+
+    </div>
+
+
+    <div
+      class="
+        flex
+        items-center
+        gap-2
+      "
+    >
+
+      <!-- Previous -->
+
+      <button
+        id="previousAyahButton"
+        class="
+          rounded-full
+          p-2
+          text-slate-300
+        "
+      >
+
+        <i
+          data-lucide="skip-back"
+          class="h-5 w-5"
+        ></i>
+
+      </button>
+
+
+      <!-- Play -->
+
+      <button
+        id="playButton"
+        class="
+          grid
+          h-12
+          w-12
+          shrink-0
+          place-items-center
+          rounded-full
+          bg-emerald-500
+          text-slate-950
+        "
+      >
+
+        <i
+          data-lucide="play"
+          class="
+            h-5
+            w-5
+            fill-current
+          "
+        ></i>
+
+      </button>
+
+
+      <!-- Next -->
+
+      <button
+        id="nextAyahButton"
+        class="
+          rounded-full
+          p-2
+          text-slate-300
+        "
+      >
+
+        <i
+          data-lucide="skip-forward"
+          class="h-5 w-5"
+        ></i>
+
+      </button>
+
+
+      <!-- Info -->
+
+      <button
+        id="openPlayerButton"
+        class="
+          min-w-0
+          flex-1
+          text-left
+        "
+      >
+
+        <p
+          id="audioTitle"
+          class="
+            truncate
+            text-sm
+            font-semibold
+          "
+        >
+          Quran
+        </p>
+
+
+        <p
+          id="audioSubtitle"
+          class="
+            truncate
+            text-xs
+            text-slate-400
+          "
+        >
+          Mishary Rashid Alafasy
+        </p>
+
+      </button>
+
+
+      <!-- Repeat -->
+
+      <button
+        id="repeatButton"
+        class="
+          rounded-full
+          p-2
+          text-slate-400
+        "
+        title="Repeat Ayah"
+      >
+
+        <i
+          data-lucide="repeat-1"
+          class="h-5 w-5"
+        ></i>
+
+      </button>
+
+
+      <!-- More -->
+
+      <button
+        id="openPlayerButton2"
+        class="
+          rounded-full
+          p-2
+          text-slate-400
+        "
+      >
+
+        <i
+          data-lucide="chevron-up"
+          class="h-5 w-5"
+        ></i>
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       FULL PLAYER
+  ====================================================== -->
+
+  <div
+    id="playerSheet"
+    class="
+      player-sheet
+      fixed
+      inset-0
+      z-50
+      mx-auto
+      hidden
+      w-full
+      max-w-md
+      bg-slate-950
+    "
+  >
+
+    <div
+      class="
+        flex
+        h-full
+        flex-col
+      "
+    >
+
+      <!-- Top -->
+
+      <div
+        class="
+          flex
+          items-center
+          justify-between
+          border-b
+          border-white/10
+          px-5
+          py-4
+        "
+      >
 
         <button
           id="closePlayerButton"
+          class="rounded-full p-2"
+        >
+
+          <i
+            data-lucide="chevron-down"
+            class="h-6 w-6"
+          ></i>
+
+        </button>
+
+
+        <span
           class="
-            grid
-            h-10
-            w-10
-            place-items-center
-            rounded-full
-            bg-white/5
+            text-xs
+            uppercase
+            tracking-widest
+            text-emerald-400
           "
         >
-          <i data-lucide="chevron-down"></i>
+          Now Playing
+        </span>
+
+
+        <button
+          class="rounded-full p-2"
+        >
+
+          <i
+            data-lucide="more-horizontal"
+            class="h-5 w-5"
+          ></i>
+
         </button>
 
       </div>
 
 
-      <div class="flex justify-center py-4">
+      <!-- Player -->
+
+      <div
+        class="
+          flex
+          flex-1
+          flex-col
+          justify-center
+          px-6
+        "
+      >
 
         <div
-          id="fullDisc"
-          class="vinyl h-48 w-48"
-        ></div>
+          class="
+            mx-auto
+            mb-8
+            grid
+            h-52
+            w-52
+            place-items-center
+            rounded-3xl
+            border
+            border-emerald-500/20
+            bg-gradient-to-br
+            from-emerald-500/20
+            to-teal-900
+          "
+        >
 
-      </div>
+          <div
+            class="
+              text-center
+            "
+          >
+
+            <p
+              class="
+                font-arabic
+                text-5xl
+              "
+              dir="rtl"
+            >
+              القرآن
+            </p>
 
 
-      <div class="text-center">
+            <p
+              class="
+                mt-3
+                text-xs
+                uppercase
+                tracking-widest
+                text-emerald-400
+              "
+            >
+              Quran
+            </p>
+
+          </div>
+
+        </div>
+
 
         <h2
           id="fullPlayerTitle"
-          class="text-xl font-bold"
+          class="
+            text-center
+            text-xl
+            font-bold
+          "
         >
           Quran
         </h2>
 
+
         <p
           id="fullPlayerReciter"
-          class="mt-1 text-sm text-slate-400"
+          class="
+            mt-1
+            text-center
+            text-sm
+            text-slate-400
+          "
         >
           Mishary Rashid Alafasy
         </p>
 
-        <p
-          id="currentAyahLabel"
-          class="mt-2 text-xs text-emerald-400"
-        >
-          Ayah 1
-        </p>
 
-      </div>
-
-
-      <div class="mt-7">
+        <!-- Seek -->
 
         <input
-          id="seekBar"
+          id="fullSeekBar"
           type="range"
           min="0"
           max="100"
           value="0"
           step="0.1"
-          class="quran-range"
+          class="
+            mt-8
+            w-full
+          "
         >
+
 
         <div
           class="
@@ -426,184 +770,243 @@
           "
         >
 
-          <span id="currentTime">0:00</span>
+          <span id="fullCurrentTime">
+            0:00
+          </span>
 
-          <span id="remainingTime">-0:00</span>
+
+          <span id="fullRemainingTime">
+            -0:00
+          </span>
+
+        </div>
+
+
+        <!-- Controls -->
+
+        <div
+          class="
+            mt-8
+            flex
+            items-center
+            justify-center
+            gap-7
+          "
+        >
+
+          <button
+            id="fullPreviousButton"
+            class="rounded-full p-3"
+          >
+
+            <i
+              data-lucide="skip-back"
+              class="h-7 w-7"
+            ></i>
+
+          </button>
+
+
+          <button
+            id="fullPlayButton"
+            class="
+              grid
+              h-16
+              w-16
+              place-items-center
+              rounded-full
+              bg-emerald-500
+              text-slate-950
+            "
+          >
+
+            <i
+              data-lucide="play"
+              class="h-7 w-7 fill-current"
+            ></i>
+
+          </button>
+
+
+          <button
+            id="fullNextButton"
+            class="rounded-full p-3"
+          >
+
+            <i
+              data-lucide="skip-forward"
+              class="h-7 w-7"
+            ></i>
+
+          </button>
+
+        </div>
+
+
+        <!-- Options -->
+
+        <div
+          class="
+            mt-10
+            grid
+            grid-cols-2
+            gap-3
+          "
+        >
+
+          <!-- Speed -->
+
+          <button
+            id="speedButton"
+            class="
+              rounded-2xl
+              border
+              border-white/10
+              bg-white/5
+              p-4
+              text-left
+            "
+          >
+
+            <p
+              class="
+                text-xs
+                text-slate-500
+              "
+            >
+              Speed
+            </p>
+
+
+            <p
+              id="speedLabel"
+              class="
+                mt-1
+                font-semibold
+              "
+            >
+              1×
+            </p>
+
+          </button>
+
+
+          <!-- Repeat -->
+
+          <button
+            id="fullRepeatButton"
+            class="
+              rounded-2xl
+              border
+              border-white/10
+              bg-white/5
+              p-4
+              text-left
+            "
+          >
+
+            <p
+              class="
+                text-xs
+                text-slate-500
+              "
+            >
+              Repeat
+            </p>
+
+
+            <p
+              id="repeatLabel"
+              class="
+                mt-1
+                font-semibold
+              "
+            >
+              Off
+            </p>
+
+          </button>
+
+        </div>
+
+
+        <!-- Reciter -->
+
+        <div class="mt-4">
+
+          <label
+            class="
+              mb-2
+              block
+              text-xs
+              text-slate-500
+            "
+          >
+            Reciter
+          </label>
+
+
+          <select
+            id="reciterSelect"
+            class="
+              w-full
+              rounded-2xl
+              border
+              border-white/10
+              bg-slate-900
+              px-4
+              py-4
+              text-sm
+              outline-none
+            "
+          >
+
+            <option value="Alafasy_128kbps">
+              Mishary Rashid Alafasy
+            </option>
+
+            <option value="Abdul_Basit_Murattal_192kbps">
+              Abdul Basit Abdul Samad
+            </option>
+
+            <option value="Abdurrahmaan_As-Sudais_192kbps">
+              Abdul Rahman Al-Sudais
+            </option>
+
+            <option value="Husary_128kbps">
+              Mahmoud Khalil Al-Husary
+            </option>
+
+            <option value="Saood_ash-Shuraym_128kbps">
+              Saud Al-Shuraim
+            </option>
+
+            <option value="Abu_Bakr_Ash-Shaatree_128kbps">
+              Abu Bakr Al-Shatri
+            </option>
+
+          </select>
 
         </div>
 
       </div>
 
-
-      <div
-        class="
-          mt-6
-          flex
-          items-center
-          justify-center
-          gap-5
-        "
-      >
-
-        <button
-          id="speedButton"
-          class="
-            grid
-            h-10
-            min-w-10
-            place-items-center
-            rounded-full
-            border
-            border-white/10
-            bg-white/5
-            text-xs
-          "
-        >
-          <span id="speedLabel">1×</span>
-        </button>
-
-
-        <button
-          id="fullPreviousButton"
-          class="
-            grid
-            h-12
-            w-12
-            place-items-center
-            rounded-full
-            bg-white/5
-          "
-        >
-          <i data-lucide="skip-back"></i>
-        </button>
-
-
-        <button
-          id="fullPlayButton"
-          class="
-            grid
-            h-16
-            w-16
-            place-items-center
-            rounded-full
-            bg-emerald-500
-            text-slate-950
-          "
-        >
-          <i
-            data-lucide="play"
-            class="fill-current"
-          ></i>
-        </button>
-
-
-        <button
-          id="fullNextButton"
-          class="
-            grid
-            h-12
-            w-12
-            place-items-center
-            rounded-full
-            bg-white/5
-          "
-        >
-          <i data-lucide="skip-forward"></i>
-        </button>
-
-
-        <button
-          id="repeatButton"
-          class="
-            grid
-            h-10
-            min-w-10
-            place-items-center
-            rounded-full
-            border
-            border-white/10
-            bg-white/5
-          "
-        >
-          <i data-lucide="repeat"></i>
-        </button>
-
-      </div>
-
-
-      <p
-        id="repeatLabel"
-        class="mt-3 text-center text-xs text-slate-500"
-      >
-        Repeat off
-      </p>
-
-
-      <div class="mt-6">
-
-        <label
-          class="
-            mb-2
-            block
-            text-xs
-            uppercase
-            tracking-wider
-            text-slate-500
-          "
-        >
-          Reciter
-        </label>
-
-
-        <select
-          id="reciterSelect"
-          class="
-            w-full
-            rounded-2xl
-            border
-            border-white/10
-            bg-white/5
-            px-4
-            py-4
-            text-sm
-            outline-none
-          "
-        >
-
-          <option value="Alafasy_128kbps">
-            Mishary Rashid Alafasy
-          </option>
-
-          <option value="Abdul_Basit_Murattal_192kbps">
-            Abdul Basit Abdul Samad
-          </option>
-
-          <option value="Abdurrahmaan_As-Sudais_192kbps">
-            Abdul Rahman Al-Sudais
-          </option>
-
-          <option value="Husary_128kbps">
-            Mahmoud Khalil Al-Husary
-          </option>
-
-          <option value="Saood_ash-Shuraym_128kbps">
-            Saud Al-Shuraim
-          </option>
-
-          <option value="Abu_Bakr_Ash-Shaatree_128kbps">
-            Abu Bakr Al-Shatri
-          </option>
-
-        </select>
-
-      </div>
-
-    </section>
+    </div>
 
   </div>
 
 
-  <script src="surah.js"></script>
+</div>
+
+
+<script src="surah.js"></script>
+
+
+<script>
+
+  lucide.createIcons();
+
+</script>
 
 </body>
 
