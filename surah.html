@@ -17,13 +17,13 @@
 
   <meta
     name="description"
-    content="Quran Reader - Read and listen to the Holy Quran"
+    content="Quran Reader"
   >
 
   <title>Quran Reader</title>
 
 
-  <!-- Tailwind -->
+  <!-- Tailwind CSS -->
 
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -54,7 +54,7 @@
   </script>
 
 
-  <!-- Arabic font -->
+  <!-- Arabic Font -->
 
   <link
     rel="preconnect"
@@ -73,7 +73,7 @@
   >
 
 
-  <!-- Lucide -->
+  <!-- Lucide Icons -->
 
   <script
     src="https://unpkg.com/lucide@latest"
@@ -81,10 +81,6 @@
 
 
   <style>
-
-    /*
-     * Prevent horizontal overflow.
-     */
 
     html,
     body {
@@ -98,11 +94,47 @@
     }
 
 
-    /*
-     * Quran Arabic text.
-     */
+    body {
 
-    .quran-text {
+      margin: 0;
+
+    }
+
+
+    .ayah {
+
+      width: 100%;
+
+      max-width: 100%;
+
+      min-width: 0;
+
+      overflow: hidden;
+
+      transition:
+        background-color .35s ease,
+        box-shadow .35s ease,
+        border-color .35s ease;
+
+    }
+
+
+    .ayah.active {
+
+      background:
+        rgba(16, 185, 129, .08);
+
+      border-color:
+        rgba(16, 185, 129, .30);
+
+      box-shadow:
+        0 0 0 1px
+        rgba(16, 185, 129, .15);
+
+    }
+
+
+    .quran-arabic {
 
       width: 100%;
 
@@ -114,24 +146,24 @@
 
       white-space: normal;
 
+      line-height: 2.35;
+
     }
 
 
-    /*
-     * Active ayah.
-     */
+    .translation {
 
-    .ayah.active-ayah {
+      overflow-wrap: anywhere;
 
-      background:
-        rgba(16, 185, 129, 0.08);
+      word-break: normal;
 
-      border-color:
-        rgba(16, 185, 129, 0.25);
+    }
 
-      box-shadow:
-        0 0 0 1px
-        rgba(16, 185, 129, 0.15);
+
+    #audioProgress {
+
+      transition:
+        width .15s linear;
 
     }
 
@@ -141,22 +173,25 @@
 
 
 <body
-  class="min-h-screen
-         w-full
-         overflow-x-hidden
-         bg-slate-950
-         text-white"
+  class="
+    min-h-screen
+    w-full
+    overflow-x-hidden
+    bg-slate-950
+    text-white
+  "
 >
 
 
   <div
-    class="mx-auto
-           min-h-screen
-           w-full
-           max-w-md
-           overflow-x-hidden
-           bg-slate-900
-           shadow-2xl"
+    class="
+      mx-auto
+      min-h-screen
+      w-full
+      max-w-md
+      overflow-x-hidden
+      bg-slate-900
+    "
   >
 
 
@@ -165,36 +200,41 @@
     ====================================================== -->
 
     <header
-      class="sticky
-             top-0
-             z-20
-             w-full
-             border-b
-             border-white/10
-             bg-slate-900/95
-             px-4
-             py-4
-             backdrop-blur"
+      class="
+        sticky
+        top-0
+        z-20
+        w-full
+        border-b
+        border-white/10
+        bg-slate-900/95
+        px-4
+        py-4
+        backdrop-blur
+      "
     >
 
       <div
-        class="flex
-               min-w-0
-               items-center
-               gap-3"
+        class="
+          flex
+          min-w-0
+          items-center
+          gap-3
+        "
       >
 
         <button
           onclick="history.back()"
-          class="shrink-0
-                 rounded-full
-                 border
-                 border-white/10
-                 bg-white/5
-                 p-2.5
-                 transition
-                 active:scale-95"
-          aria-label="Go back"
+          class="
+            shrink-0
+            rounded-full
+            border
+            border-white/10
+            bg-white/5
+            p-2.5
+            active:scale-95
+          "
+          aria-label="Back"
         >
 
           <i
@@ -206,15 +246,19 @@
 
 
         <div
-          class="min-w-0
-                 flex-1"
+          class="
+            min-w-0
+            flex-1
+          "
         >
 
           <p
-            class="text-xs
-                   uppercase
-                   tracking-widest
-                   text-emerald-400"
+            class="
+              text-xs
+              uppercase
+              tracking-widest
+              text-emerald-400
+            "
           >
             Quran
           </p>
@@ -222,8 +266,10 @@
 
           <h1
             id="surahTitle"
-            class="truncate
-                   font-bold"
+            class="
+              truncate
+              font-bold
+            "
           >
             Loading...
           </h1>
@@ -233,15 +279,15 @@
 
         <button
           id="surahBookmark"
-          class="shrink-0
-                 rounded-full
-                 border
-                 border-white/10
-                 bg-white/5
-                 p-2.5
-                 text-slate-300
-                 transition
-                 active:scale-95"
+          class="
+            shrink-0
+            rounded-full
+            border
+            border-white/10
+            bg-white/5
+            p-2.5
+            active:scale-95
+          "
           aria-label="Bookmark Surah"
         >
 
@@ -258,39 +304,47 @@
 
 
     <!-- =====================================================
-         QURAN CONTENT
+         QURAN
     ====================================================== -->
 
     <main
       id="quranContent"
-      class="w-full
-             overflow-x-hidden
-             px-4
-             pb-44
-             pt-6"
+      class="
+        w-full
+        overflow-x-hidden
+        px-4
+        pb-44
+        pt-6
+      "
     >
 
       <div
-        class="py-16
-               text-center"
+        class="
+          py-16
+          text-center
+        "
       >
 
         <div
-          class="mx-auto
-                 h-9
-                 w-9
-                 animate-spin
-                 rounded-full
-                 border-2
-                 border-slate-600
-                 border-t-emerald-400"
+          class="
+            mx-auto
+            h-9
+            w-9
+            animate-spin
+            rounded-full
+            border-2
+            border-slate-600
+            border-t-emerald-400
+          "
         ></div>
 
 
         <p
-          class="mt-4
-                 text-sm
-                 text-slate-400"
+          class="
+            mt-4
+            text-sm
+            text-slate-400
+          "
         >
           Loading Surah...
         </p>
@@ -306,130 +360,107 @@
 
     <div
       id="audioBar"
-      class="fixed
-             bottom-0
-             left-0
-             right-0
-             z-30
-             mx-auto
-             hidden
-             w-full
-             max-w-md
-             border-t
-             border-white/10
-             bg-slate-900/95
-             px-4
-             py-3
-             shadow-2xl
-             backdrop-blur"
+      class="
+        fixed
+        bottom-0
+        left-0
+        right-0
+        z-30
+        mx-auto
+        hidden
+        w-full
+        max-w-md
+        border-t
+        border-white/10
+        bg-slate-900/95
+        px-4
+        py-3
+        shadow-2xl
+        backdrop-blur
+      "
     >
 
-      <!-- PROGRESS -->
+      <!-- SEEK BAR -->
 
-      <div
-        class="mb-3
-               h-1
-               w-full
-               overflow-hidden
-               rounded-full
-               bg-slate-700"
-      >
-
-        <div
-          id="audioProgress"
-          class="h-full
-                 w-0
-                 rounded-full
-                 bg-emerald-500"
-        ></div>
-
-      </div>
-
-
-      <div
-        class="flex
-               min-w-0
-               items-center
-               gap-3"
+      <input
+        id="seekBar"
+        type="range"
+        min="0"
+        max="100"
+        value="0"
+        step="0.1"
+        class="
+          mb-3
+          h-1
+          w-full
+          cursor-pointer
+          appearance-none
+          rounded-full
+          bg-slate-700
+        "
+        aria-label="Seek"
       >
 
 
-        <!-- PLAY -->
-
-        <button
-          id="playButton"
-          class="grid
-                 h-12
-                 w-12
-                 shrink-0
-                 place-items-center
-                 rounded-full
-                 bg-emerald-500
-                 text-slate-950
-                 shadow-lg
-                 transition
-                 active:scale-95"
-          aria-label="Play Surah"
-        >
-
-          <i
-            data-lucide="play"
-            class="h-5
-                   w-5
-                   fill-current"
-          ></i>
-
-        </button>
-
-
-        <!-- INFORMATION -->
-
-        <div
-          class="min-w-0
-                 flex-1"
-        >
-
-          <p
-            id="audioTitle"
-            class="truncate
-                   text-sm
-                   font-semibold"
-          >
-            Quran Recitation
-          </p>
-
-
-          <p
-            id="audioSubtitle"
-            class="truncate
-                   text-xs
-                   text-slate-400"
-          >
-            Mishary Rashid Alafasy
-          </p>
-
-        </div>
+      <div
+        class="
+          flex
+          min-w-0
+          items-center
+          gap-2
+        "
+      >
 
 
         <!-- PREVIOUS -->
 
         <button
           id="previousAyahButton"
-          class="hidden
-                 shrink-0
-                 rounded-full
-                 border
-                 border-white/10
-                 p-2.5
-                 text-slate-400
-                 transition
-                 active:scale-95"
+          class="
+            shrink-0
+            rounded-full
+            border
+            border-white/10
+            p-2
+            text-slate-300
+            active:scale-95
+          "
           aria-label="Previous Ayah"
         >
 
           <i
             data-lucide="skip-back"
-            class="h-5 w-5"
+            class="h-4 w-4"
+          ></i>
+
+        </button>
+
+
+        <!-- PLAY -->
+
+        <button
+          id="playButton"
+          class="
+            grid
+            h-12
+            w-12
+            shrink-0
+            place-items-center
+            rounded-full
+            bg-emerald-500
+            text-slate-950
+            active:scale-95
+          "
+          aria-label="Play Surah"
+        >
+
+          <i
+            data-lucide="play"
+            class="
+              h-5
+              w-5
+              fill-current
+            "
           ></i>
 
         </button>
@@ -439,21 +470,79 @@
 
         <button
           id="nextAyahButton"
-          class="hidden
-                 shrink-0
-                 rounded-full
-                 border
-                 border-white/10
-                 p-2.5
-                 text-slate-400
-                 transition
-                 active:scale-95"
+          class="
+            shrink-0
+            rounded-full
+            border
+            border-white/10
+            p-2
+            text-slate-300
+            active:scale-95
+          "
           aria-label="Next Ayah"
         >
 
           <i
             data-lucide="skip-forward"
-            class="h-5 w-5"
+            class="h-4 w-4"
+          ></i>
+
+        </button>
+
+
+        <!-- INFO -->
+
+        <div
+          class="
+            min-w-0
+            flex-1
+          "
+        >
+
+          <p
+            id="audioTitle"
+            class="
+              truncate
+              text-sm
+              font-semibold
+            "
+          >
+            Quran Recitation
+          </p>
+
+
+          <p
+            id="audioSubtitle"
+            class="
+              truncate
+              text-xs
+              text-slate-400
+            "
+          >
+            Mishary Rashid Alafasy
+          </p>
+
+        </div>
+
+
+        <!-- MORE -->
+
+        <button
+          id="audioMoreButton"
+          class="
+            shrink-0
+            rounded-full
+            border
+            border-white/10
+            p-2
+            text-slate-400
+          "
+          aria-label="Audio options"
+        >
+
+          <i
+            data-lucide="more-vertical"
+            class="h-4 w-4"
           ></i>
 
         </button>
@@ -464,11 +553,13 @@
       <!-- TIME -->
 
       <div
-        class="mt-2
-               flex
-               justify-between
-               text-[11px]
-               text-slate-500"
+        class="
+          mt-2
+          flex
+          justify-between
+          text-[11px]
+          text-slate-500
+        "
       >
 
         <span id="currentTime">
@@ -483,7 +574,6 @@
 
     </div>
 
-
   </div>
 
 
@@ -496,7 +586,6 @@
 
   </script>
 
-
 </body>
 
-</html>
+  </html>
