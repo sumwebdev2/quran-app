@@ -1,89 +1,196 @@
-const API_BASE = "https://api.alquran.cloud/v1";
+const API_BASE =
+  "https://api.alquran.cloud/v1";
 
-const params = new URLSearchParams(window.location.search);
-const surahNumber = params.get("surah") || "1";
 
-const title = document.getElementById("surahTitle");
-const content = document.getElementById("quranContent");
-const audioBar = document.getElementById("audioBar");
-const playButton = document.getElementById("playButton");
-const audioTitle = document.getElementById("audioTitle");
-const audioProgress = document.getElementById("audioProgress");
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+
+const surahNumber =
+  params.get("surah") || "1";
+
+
+const title =
+  document.getElementById(
+    "surahTitle"
+  );
+
+
+const content =
+  document.getElementById(
+    "quranContent"
+  );
+
+
+const audioBar =
+  document.getElementById(
+    "audioBar"
+  );
+
+
+const playButton =
+  document.getElementById(
+    "playButton"
+  );
+
+
+const audioTitle =
+  document.getElementById(
+    "audioTitle"
+  );
+
+
+const audioProgress =
+  document.getElementById(
+    "audioProgress"
+  );
+
+
+const currentTimeElement =
+  document.getElementById(
+    "currentTime"
+  );
+
+
+const durationElement =
+  document.getElementById(
+    "duration"
+  );
+
+
+const previousButton =
+  document.getElementById(
+    "previousAyahButton"
+  );
+
+
+const nextButton =
+  document.getElementById(
+    "nextAyahButton"
+  );
+
+
+/*
+|--------------------------------------------------------------------------
+| STATE
+|--------------------------------------------------------------------------
+*/
 
 let surahData = null;
 
-const audio = new Audio();
+let audio = new Audio();
 
 let currentAyahIndex = 0;
 
 let isPlaying = false;
 
-let continuousMode = true;
-
-let loadingAudio = false;
+let isSurahPlaying = false;
 
 
-/* =========================================================
-   LOAD SURAH
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| LOAD SURAH
+|--------------------------------------------------------------------------
+*/
 
 async function loadSurah() {
 
   try {
 
-    const response = await fetch(
-      `${API_BASE}/surah/${surahNumber}/editions/quran-uthmani,en.asad`
-    );
+    const response =
+      await fetch(
+        `${API_BASE}/surah/${surahNumber}/editions/quran-uthmani,en.asad`
+      );
+
 
     if (!response.ok) {
-      throw new Error("Failed to load Surah");
+
+      throw new Error(
+        "Failed to load Surah"
+      );
+
     }
 
-    const result = await response.json();
 
-    const arabic = result.data[0];
+    const result =
+      await response.json();
 
-    const translation = result.data[1];
+
+    const arabic =
+      result.data[0];
+
+
+    const translation =
+      result.data[1];
+
+
+    /*
+     * IMPORTANT:
+     *
+     * We do NOT add Bismillah ourselves.
+     *
+     * The ayahs from the Quran edition
+     * are rendered exactly as returned.
+     */
 
     surahData = {
+
       ...arabic,
-      translationAyahs: translation.ayahs
+
+      translationAyahs:
+        translation.ayahs
+
     };
+
 
     title.textContent =
       arabic.englishName;
 
+
     audioTitle.textContent =
       `${arabic.englishName} · Alafasy`;
 
-    renderSurah(surahData);
+
+    renderSurah();
+
 
     setupAudio();
+
 
   } catch (error) {
 
     console.error(error);
 
+
     content.innerHTML = `
 
-      <div class="py-16 text-center">
+      <div
+        class="py-16
+               text-center"
+      >
 
         <i
           data-lucide="wifi-off"
-          class="mx-auto h-8 w-8 text-red-400"
+          class="mx-auto
+                 h-8 w-8
+                 text-red-400"
         ></i>
 
-        <p class="mt-4 font-semibold">
+
+        <p
+          class="mt-4
+                 font-semibold"
+        >
           Couldn't load this Surah
         </p>
 
-        <p class="mt-1 text-sm text-slate-400">
-          Please check your internet connection.
-        </p>
 
         <button
           onclick="loadSurah()"
-          class="mt-4 rounded-xl
+          class="mt-4
+                 rounded-xl
                  bg-emerald-500
                  px-5 py-2.5
                  font-semibold
@@ -96,6 +203,7 @@ async function loadSurah() {
 
     `;
 
+
     lucide.createIcons();
 
   }
@@ -103,45 +211,75 @@ async function loadSurah() {
 }
 
 
-/* =========================================================
-   RENDER SURAH
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| RENDER SURAH
+|--------------------------------------------------------------------------
+*/
 
-function renderSurah(surah) {
+function renderSurah() {
+
+  const surah =
+    surahData;
+
 
   content.innerHTML = `
 
     <!-- SURAH HEADER -->
 
     <section
-      class="mb-8 rounded-3xl
+      class="mb-8
+             w-full
+             rounded-3xl
              bg-gradient-to-br
              from-emerald-600
              to-teal-800
-             p-6 text-center"
+             p-6
+             text-center"
     >
 
-      <p class="text-sm text-emerald-100">
+      <p
+        class="text-sm
+               text-emerald-100"
+      >
         Surah ${surah.number}
       </p>
 
+
       <h2
-        class="mt-2 font-arabic
-               text-4xl font-bold"
+        class="mt-2
+               font-arabic
+               text-4xl
+               font-bold"
         dir="rtl"
       >
         ${surah.name}
       </h2>
 
-      <h3 class="mt-3 text-xl font-bold">
+
+      <h3
+        class="mt-3
+               text-xl
+               font-bold"
+      >
         ${surah.englishName}
       </h3>
 
-      <p class="mt-1 text-sm text-emerald-100">
+
+      <p
+        class="mt-1
+               text-sm
+               text-emerald-100"
+      >
         ${surah.englishNameTranslation}
       </p>
 
-      <p class="mt-3 text-xs text-emerald-100">
+
+      <p
+        class="mt-3
+               text-xs
+               text-emerald-100"
+      >
         ${surah.numberOfAyahs} Ayahs
       </p>
 
@@ -150,62 +288,72 @@ function renderSurah(surah) {
 
     <!-- AYAH LIST -->
 
-    <div class="space-y-8">
+    <div
+      class="w-full
+             space-y-5"
+    >
 
-      ${surah.ayahs.map((ayah, index) => {
+      ${surah.ayahs.map(
+        (ayah, index) => {
 
-        const translation =
-          surah.translationAyahs[index];
+          const translation =
+            surah.translationAyahs[
+              index
+            ];
 
-        return `
 
-          <article
-            id="ayah-${ayah.numberInSurah}"
-            class="ayah
-                   rounded-2xl
-                   border-b
-                   border-white/5
-                   pb-7
-                   transition-all
-                   duration-500"
-          >
+          return `
 
-            <div
-              class="mb-4
-                     flex
-                     items-center
-                     justify-between"
+            <article
+              id="ayah-${ayah.numberInSurah}"
+              class="ayah
+                     w-full
+                     min-w-0
+                     overflow-hidden
+                     rounded-2xl
+                     border
+                     border-transparent
+                     p-4
+                     transition-all
+                     duration-500"
             >
 
-              <span
-                class="grid
-                       h-9
-                       w-9
-                       place-items-center
-                       rounded-full
-                       bg-emerald-500/10
-                       text-xs
-                       font-bold
-                       text-emerald-400"
+              <!-- AYAH HEADER -->
+
+              <div
+                class="mb-5
+                       flex
+                       items-center
+                       justify-between"
               >
-                ${ayah.numberInSurah}
-              </span>
 
+                <span
+                  class="grid
+                         h-9
+                         w-9
+                         shrink-0
+                         place-items-center
+                         rounded-full
+                         bg-emerald-500/10
+                         text-xs
+                         font-bold
+                         text-emerald-400"
+                >
+                  ${ayah.numberInSurah}
+                </span>
 
-              <div class="flex gap-2">
-
-                <!-- PLAY AYAH -->
 
                 <button
-                  onclick="playAyah(${index})"
+                  onclick="startSurahFromAyah(${index})"
                   class="rounded-full
                          border
                          border-white/10
                          p-2.5
                          text-slate-400
                          transition
-                         hover:text-emerald-400"
-                  aria-label="Play ayah"
+                         hover:text-emerald-400
+                         active:scale-95"
+                  aria-label="Play from this Ayah"
                 >
 
                   <i
@@ -215,78 +363,106 @@ function renderSurah(surah) {
 
                 </button>
 
-
-                <!-- BOOKMARK -->
-
-                <button
-                  onclick="bookmarkAyah(${index})"
-                  class="rounded-full
-                         border
-                         border-white/10
-                         p-2.5
-                         text-slate-400"
-                  aria-label="Bookmark ayah"
-                >
-
-                  <i
-                    data-lucide="bookmark"
-                    class="h-4 w-4"
-                  ></i>
-
-                </button>
-
               </div>
 
-            </div>
+
+              <!-- ARABIC -->
+
+              <p
+                class="quran-text
+                       w-full
+                       max-w-full
+                       overflow-hidden
+                       font-arabic
+                       text-right
+                       text-[28px]
+                       leading-[2.25]
+                       text-white"
+                dir="rtl"
+                lang="ar"
+              >
+                ${ayah.text}
+              </p>
 
 
-            <!-- ARABIC -->
+              <!-- TRANSLATION -->
 
-            <p
-              class="font-arabic
-                     text-right
-                     text-3xl
-                     leading-[2.4]
-                     text-white"
-              dir="rtl"
-            >
-              ${ayah.text}
-            </p>
+              <p
+                class="mt-5
+                       w-full
+                       max-w-full
+                       overflow-hidden
+                       text-sm
+                       leading-7
+                       text-slate-400"
+              >
+                ${translation.text}
+              </p>
 
+            </article>
 
-            <!-- TRANSLATION -->
+          `;
 
-            <p
-              class="mt-5
-                     text-sm
-                     leading-7
-                     text-slate-400"
-            >
-              ${translation.text}
-            </p>
-
-          </article>
-
-        `;
-
-      }).join("")}
+        }
+      ).join("")}
 
     </div>
 
   `;
+
 
   lucide.createIcons();
 
 }
 
 
-/* =========================================================
-   AUDIO SETUP
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| AUDIO SETUP
+|--------------------------------------------------------------------------
+*/
 
 function setupAudio() {
 
-  audio.preload = "auto";
+  audio.preload =
+    "metadata";
+
+
+  /*
+   * Full Surah audio.
+   *
+   * This is the important change:
+   * the main player is one continuous
+   * Surah recording rather than stopping
+   * after every individual ayah.
+   */
+
+  audio.src =
+    `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${surahNumber}.mp3`;
+
+
+  audioBar.classList.remove(
+    "hidden"
+  );
+
+
+  audio.addEventListener(
+    "loadedmetadata",
+    () => {
+
+      durationElement.textContent =
+        formatTime(
+          audio.duration
+        );
+
+    }
+  );
+
+
+  audio.addEventListener(
+    "timeupdate",
+    handleTimeUpdate
+  );
 
 
   audio.addEventListener(
@@ -294,6 +470,8 @@ function setupAudio() {
     () => {
 
       isPlaying = true;
+
+      isSurahPlaying = true;
 
       updatePlayButton();
 
@@ -314,176 +492,153 @@ function setupAudio() {
 
 
   audio.addEventListener(
-    "timeupdate",
-    updateProgress
-  );
-
-
-  audio.addEventListener(
     "ended",
-    handleAyahEnded
+    () => {
+
+      isPlaying = false;
+
+      isSurahPlaying = false;
+
+      updatePlayButton();
+
+      highlightAyah(
+        surahData.ayahs.length - 1
+      );
+
+    }
   );
 
 
-  audioBar.classList.remove("hidden");
+  playButton.addEventListener(
+    "click",
+    togglePlayback
+  );
+
+
+  previousButton.addEventListener(
+    "click",
+    previousAyah
+  );
+
+
+  nextButton.addEventListener(
+    "click",
+    nextAyah
+  );
+
+
+  /*
+   * Show controls.
+   */
+
+  previousButton.classList.remove(
+    "hidden"
+  );
+
+  nextButton.classList.remove(
+    "hidden"
+  );
+
 
   updatePlayButton();
 
 }
 
 
-/* =========================================================
-   LOAD AYAH AUDIO
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| PLAY / PAUSE
+|--------------------------------------------------------------------------
+*/
 
-async function loadAyahAudio(index) {
+async function togglePlayback() {
 
-  if (!surahData) {
-    return false;
+  if (!audio.src) {
+    return;
   }
 
 
-  if (
-    index < 0 ||
-    index >= surahData.ayahs.length
-  ) {
+  if (audio.paused) {
 
-    return false;
+    try {
 
-  }
+      await audio.play();
 
+    } catch (error) {
 
-  if (loadingAudio) {
-    return false;
-  }
-
-
-  loadingAudio = true;
-
-
-  const ayah =
-    surahData.ayahs[index];
-
-
-  currentAyahIndex = index;
-
-
-  try {
-
-    const response = await fetch(
-
-      `${API_BASE}/ayah/${ayah.number}/ar.alafasy`
-
-    );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        "Ayah audio unavailable"
+      console.error(
+        "Playback failed:",
+        error
       );
 
     }
 
-
-    const result =
-      await response.json();
-
-
-    const audioUrl =
-      result?.data?.audio;
-
-
-    if (!audioUrl) {
-
-      throw new Error(
-        "No audio URL returned"
-      );
-
-    }
-
-
-    /*
-     * Stop current audio before changing
-     * to the new ayah.
-     */
+  } else {
 
     audio.pause();
-
-    audio.currentTime = 0;
-
-    audio.src = audioUrl;
-
-
-    /*
-     * Highlight the new ayah.
-     */
-
-    highlightAyah(
-      ayah.numberInSurah
-    );
-
-
-    /*
-     * Update player title.
-     */
-
-    audioTitle.textContent =
-      `${surahData.englishName} · Ayah ${ayah.numberInSurah}`;
-
-
-    return true;
-
-  } catch (error) {
-
-    console.error(
-      "Audio loading error:",
-      error
-    );
-
-    return false;
-
-  } finally {
-
-    loadingAudio = false;
 
   }
 
 }
 
 
-/* =========================================================
-   PLAY FROM AYAH
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| START SURAH FROM AYAH
+|--------------------------------------------------------------------------
+*/
 
-async function playFromAyah(index) {
+async function startSurahFromAyah(
+  index
+) {
 
   if (!surahData) {
     return;
   }
 
 
+  currentAyahIndex =
+    Math.max(
+      0,
+      Math.min(
+        index,
+        surahData.ayahs.length - 1
+      )
+    );
+
+
+  /*
+   * We need to estimate the position
+   * of this ayah inside the full Surah.
+   *
+   * Until we add precise timing metadata,
+   * we use the ayah position as a
+   * navigation fallback.
+   */
+
+  const total =
+    surahData.ayahs.length;
+
+
+  const percentage =
+    currentAyahIndex / total;
+
+
   if (
-    index < 0 ||
-    index >= surahData.ayahs.length
+    audio.duration &&
+    isFinite(audio.duration)
   ) {
 
-    stopPlayback();
-
-    return;
-
-  }
-
-
-  const loaded =
-    await loadAyahAudio(index);
-
-
-  if (!loaded) {
-
-    return;
+    audio.currentTime =
+      audio.duration *
+      percentage;
 
   }
+
+
+  highlightAyah(
+    currentAyahIndex
+  );
 
 
   try {
@@ -502,259 +657,178 @@ async function playFromAyah(index) {
 }
 
 
-/* =========================================================
-   PLAY FULL SURAH
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| TIME UPDATE
+|--------------------------------------------------------------------------
+*/
 
-async function playSurah() {
+function handleTimeUpdate() {
 
-  continuousMode = true;
-
-  await playFromAyah(
-    currentAyahIndex
-  );
-
-}
-
-
-/* =========================================================
-   PLAY INDIVIDUAL AYAH
-========================================================= */
-
-async function playAyah(index) {
-
-  /*
-   * IMPORTANT:
-   *
-   * Clicking an ayah starts continuous mode.
-   * It will therefore continue automatically
-   * through the rest of the Surah.
-   */
-
-  continuousMode = true;
-
-  await playFromAyah(index);
-
-}
-
-
-/* =========================================================
-   AYAH FINISHED
-========================================================= */
-
-async function handleAyahEnded() {
-
-  if (!continuousMode) {
+  if (
+    !audio.duration ||
+    !isFinite(audio.duration)
+  ) {
     return;
   }
 
 
-  const nextIndex =
-    currentAyahIndex + 1;
+  /*
+   * Player progress.
+   */
+
+  const progress =
+    (audio.currentTime /
+      audio.duration) *
+    100;
+
+
+  audioProgress.style.width =
+    `${progress}%`;
+
+
+  currentTimeElement.textContent =
+    formatTime(
+      audio.currentTime
+    );
+
+
+  durationElement.textContent =
+    formatTime(
+      audio.duration
+    );
 
 
   /*
-   * End of Surah.
+   * Synchronize the highlighted ayah
+   * with the full Surah audio.
+   *
+   * This is an initial synchronization
+   * method. We will replace it with
+   * exact ayah timing data next.
    */
 
   if (
-    nextIndex >=
-    surahData.ayahs.length
+    isSurahPlaying &&
+    surahData
   ) {
 
-    isPlaying = false;
-
-    updatePlayButton();
-
-    audioTitle.textContent =
-      `${surahData.englishName} · Finished`;
-
-    return;
-
-  }
+    const total =
+      surahData.ayahs.length;
 
 
-  /*
-   * Automatically play next ayah.
-   */
-
-  await playFromAyah(
-    nextIndex
-  );
-
-}
+    const calculatedIndex =
+      Math.floor(
+        (audio.currentTime /
+          audio.duration) *
+        total
+      );
 
 
-/* =========================================================
-   GLOBAL PLAY BUTTON
-========================================================= */
-
-playButton.addEventListener(
-  "click",
-  async () => {
-
-    if (!surahData) {
-      return;
-    }
+    const safeIndex =
+      Math.min(
+        calculatedIndex,
+        total - 1
+      );
 
 
-    /*
-     * If currently playing:
-     * pause.
-     */
+    if (
+      safeIndex !==
+      currentAyahIndex
+    ) {
 
-    if (!audio.paused) {
+      currentAyahIndex =
+        safeIndex;
 
-      audio.pause();
 
-      return;
+      highlightAyah(
+        currentAyahIndex
+      );
 
     }
-
-
-    /*
-     * If we already have an audio source,
-     * continue from the same ayah.
-     */
-
-    if (audio.src) {
-
-      continuousMode = true;
-
-      try {
-
-        await audio.play();
-
-      } catch (error) {
-
-        console.error(
-          "Resume failed:",
-          error
-        );
-
-      }
-
-      return;
-
-    }
-
-
-    /*
-     * Nothing loaded yet.
-     */
-
-    await playSurah();
-
-  }
-);
-
-
-/* =========================================================
-   STOP PLAYBACK
-========================================================= */
-
-function stopPlayback() {
-
-  continuousMode = false;
-
-  audio.pause();
-
-  audio.currentTime = 0;
-
-  isPlaying = false;
-
-  updatePlayButton();
-
-
-  if (audioProgress) {
-
-    audioProgress.style.width =
-      "0%";
-
-  }
-
-
-  if (surahData) {
-
-    audioTitle.textContent =
-      `${surahData.englishName} · Alafasy`;
 
   }
 
 }
 
 
-/* =========================================================
-   HIGHLIGHT AYAH
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| HIGHLIGHT AYAH
+|--------------------------------------------------------------------------
+*/
 
-function highlightAyah(number) {
-
-  /*
-   * Remove previous highlights.
-   */
+function highlightAyah(
+  index
+) {
 
   document
     .querySelectorAll(".ayah")
     .forEach(element => {
 
       element.classList.remove(
-        "bg-emerald-500/10",
-        "ring-1",
-        "ring-emerald-500/30"
+        "active-ayah"
       );
 
     });
 
 
-  /*
-   * Find current ayah.
-   */
-
-  const current =
-    document.getElementById(
-      `ayah-${number}`
-    );
+  const ayah =
+    surahData.ayahs[index];
 
 
-  if (!current) {
+  if (!ayah) {
     return;
   }
 
 
-  /*
-   * Highlight it.
-   */
+  const element =
+    document.getElementById(
+      `ayah-${ayah.numberInSurah}`
+    );
 
-  current.classList.add(
-    "bg-emerald-500/10",
-    "ring-1",
-    "ring-emerald-500/30"
+
+  if (!element) {
+    return;
+  }
+
+
+  element.classList.add(
+    "active-ayah"
   );
 
 
-  /*
-   * Scroll to it.
-   */
+  element.scrollIntoView({
 
-  current.scrollIntoView({
     behavior: "smooth",
+
     block: "center"
+
   });
 
 }
 
 
-/* =========================================================
-   AUDIO PROGRESS
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| NEXT AYAH
+|--------------------------------------------------------------------------
+*/
 
-function updateProgress() {
+function nextAyah() {
+
+  if (!surahData) {
+    return;
+  }
+
+
+  const next =
+    currentAyahIndex + 1;
+
 
   if (
-    !audioProgress ||
-    !audio.duration ||
-    !isFinite(audio.duration)
+    next >=
+    surahData.ayahs.length
   ) {
 
     return;
@@ -762,27 +836,140 @@ function updateProgress() {
   }
 
 
-  const percentage =
-    (audio.currentTime /
-      audio.duration) * 100;
+  currentAyahIndex =
+    next;
 
 
-  audioProgress.style.width =
-    `${percentage}%`;
+  highlightAyah(
+    currentAyahIndex
+  );
+
+
+  /*
+   * Move approximately to the
+   * next ayah's position in the
+   * full Surah recording.
+   */
+
+  if (
+    audio.duration &&
+    isFinite(audio.duration)
+  ) {
+
+    audio.currentTime =
+      audio.duration *
+      (
+        currentAyahIndex /
+        surahData.ayahs.length
+      );
+
+  }
 
 }
 
 
-/* =========================================================
-   PLAY BUTTON ICON
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| PREVIOUS AYAH
+|--------------------------------------------------------------------------
+*/
 
-function updatePlayButton() {
+function previousAyah() {
 
-  if (!playButton) {
+  if (!surahData) {
     return;
   }
 
+
+  const previous =
+    currentAyahIndex - 1;
+
+
+  if (previous < 0) {
+
+    audio.currentTime = 0;
+
+    currentAyahIndex = 0;
+
+    highlightAyah(0);
+
+    return;
+
+  }
+
+
+  currentAyahIndex =
+    previous;
+
+
+  highlightAyah(
+    currentAyahIndex
+  );
+
+
+  if (
+    audio.duration &&
+    isFinite(audio.duration)
+  ) {
+
+    audio.currentTime =
+      audio.duration *
+      (
+        currentAyahIndex /
+        surahData.ayahs.length
+      );
+
+  }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FORMAT TIME
+|--------------------------------------------------------------------------
+*/
+
+function formatTime(
+  seconds
+) {
+
+  if (
+    !seconds ||
+    !isFinite(seconds)
+  ) {
+
+    return "0:00";
+
+  }
+
+
+  const minutes =
+    Math.floor(
+      seconds / 60
+    );
+
+
+  const remaining =
+    Math.floor(
+      seconds % 60
+    );
+
+
+  return `${minutes}:${String(
+    remaining
+  ).padStart(2, "0")}`;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PLAY BUTTON ICON
+|--------------------------------------------------------------------------
+*/
+
+function updatePlayButton() {
 
   playButton.innerHTML =
     isPlaying
@@ -807,65 +994,10 @@ function updatePlayButton() {
 }
 
 
-/* =========================================================
-   BOOKMARK
-========================================================= */
-
-function bookmarkAyah(index) {
-
-  if (!surahData) {
-    return;
-  }
-
-
-  const ayah =
-    surahData.ayahs[index];
-
-
-  const key =
-    `quran-bookmark-${surahNumber}-${ayah.numberInSurah}`;
-
-
-  const existing =
-    localStorage.getItem(key);
-
-
-  if (existing) {
-
-    localStorage.removeItem(key);
-
-    return;
-
-  }
-
-
-  localStorage.setItem(
-
-    key,
-
-    JSON.stringify({
-
-      surah:
-        surahNumber,
-
-      ayah:
-        ayah.numberInSurah,
-
-      text:
-        ayah.text,
-
-      savedAt:
-        Date.now()
-
-    })
-
-  );
-
-}
-
-
-/* =========================================================
-   START
-========================================================= */
+/*
+|--------------------------------------------------------------------------
+| START
+|--------------------------------------------------------------------------
+*/
 
 loadSurah();
