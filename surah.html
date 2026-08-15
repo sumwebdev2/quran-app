@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f172a"
+  >
+
+  <title>Quran Reader</title>
+
+
+  <!-- Tailwind -->
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+
+  <script>
+
+    tailwind.config = {
+
+      theme: {
+
+        extend: {
+
+          fontFamily: {
+
+            arabic: [
+              "Amiri",
+              "serif"
+            ]
+
+          }
+
+        }
+
+      }
+
+    };
+
+  </script>
+
+
+  <!-- Arabic Font -->
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap"
+    rel="stylesheet"
+  >
+
+
+  <!-- Icons -->
+
+  <script
+    src="https://unpkg.com/lucide@latest"
+  ></script>
+
+</head>
+
+
+<body
+  class="min-h-screen
+         bg-slate-950
+         text-white"
+>
+
+
+  <div
+    class="mx-auto
+           min-h-screen
+           max-w-md
+           bg-slate-900"
+  >
+
+
+    <!-- HEADER -->
+
+    <header
+      class="sticky top-0 z-20
+             border-b
+             border-white/10
+             bg-slate-900/95
+             px-5 py-4
+             backdrop-blur"
+    >
+
+      <div
+        class="flex
+               items-center
+               gap-3"
+      >
+
+        <button
+          onclick="history.back()"
+          class="rounded-full
+                 border
+                 border-white/10
+                 bg-white/5
+                 p-2.5"
+        >
+
+          <i
+            data-lucide="arrow-left"
+            class="h-5 w-5"
+          ></i>
+
+        </button>
+
+
+        <div>
+
+          <p
+            class="text-xs
+                   uppercase
+                   tracking-widest
+                   text-emerald-400"
+          >
+            Quran
+          </p>
+
+          <h1
+            id="surahTitle"
+            class="font-bold"
+          >
+            Loading...
+          </h1>
+
+        </div>
+
+
+        <button
+          class="ml-auto
+                 rounded-full
+                 border
+                 border-white/10
+                 bg-white/5
+                 p-2.5"
+        >
+
+          <i
+            data-lucide="bookmark"
+            class="h-5 w-5"
+          ></i>
+
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- CONTENT -->
+
+    <main
+      id="quranContent"
+      class="px-5 pb-32 pt-6"
+    >
+
+      <div
+        class="py-16
+               text-center"
+      >
+
+        <div
+          class="mx-auto
+                 h-9 w-9
+                 animate-spin
+                 rounded-full
+                 border-2
+                 border-slate-600
+                 border-t-emerald-400"
+        ></div>
+
+        <p
+          class="mt-4
+                 text-sm
+                 text-slate-400"
+        >
+          Loading Surah...
+        </p>
+
+      </div>
+
+    </main>
+
+
+    <!-- AUDIO BAR -->
+
+    <div
+      id="audioBar"
+      class="fixed
+             bottom-0
+             left-0
+             right-0
+             z-30
+             mx-auto
+             hidden
+             max-w-md
+             border-t
+             border-white/10
+             bg-slate-900/95
+             p-4
+             backdrop-blur"
+    >
+
+      <div
+        class="flex
+               items-center
+               gap-3"
+      >
+
+        <button
+          id="playButton"
+          class="grid
+                 h-12
+                 w-12
+                 shrink-0
+                 place-items-center
+                 rounded-full
+                 bg-emerald-500
+                 text-slate-950"
+        >
+
+          <i
+            data-lucide="play"
+            class="h-5 w-5
+                   fill-current"
+          ></i>
+
+        </button>
+
+
+        <div
+          class="min-w-0
+                 flex-1"
+        >
+
+          <p
+            id="audioTitle"
+            class="truncate
+                   text-sm
+                   font-semibold"
+          >
+            Quran Recitation
+          </p>
+
+          <p
+            class="text-xs
+                   text-slate-400"
+          >
+            Alafasy
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+  </div>
+
+
+  <script src="surah.js"></script>
+
+</body>
+
+</html>
