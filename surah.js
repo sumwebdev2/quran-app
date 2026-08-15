@@ -1,12 +1,7 @@
 /* =========================================================
    QURAN READER
-   Continuous Ayah Playback
 ========================================================= */
 
-
-/* =========================================================
-   CONFIG
-========================================================= */
 
 const API =
   "https://api.alquran.cloud/v1";
@@ -16,7 +11,7 @@ const AUDIO_BASE =
 
 
 /* =========================================================
-   URL
+   SURAH NUMBER
 ========================================================= */
 
 const params =
@@ -57,21 +52,6 @@ const audioTitle =
 const audioSubtitle =
   document.getElementById(
     "audioSubtitle"
-  );
-
-const fullPlayerTitle =
-  document.getElementById(
-    "fullPlayerTitle"
-  );
-
-const fullPlayerReciter =
-  document.getElementById(
-    "fullPlayerReciter"
-  );
-
-const currentAyahLabel =
-  document.getElementById(
-    "currentAyahLabel"
   );
 
 const playButton =
@@ -154,24 +134,9 @@ const playerOverlay =
     "playerOverlay"
   );
 
-const openPlayerButton =
+const fullDisc =
   document.getElementById(
-    "openPlayerButton"
-  );
-
-const openPlayerButton2 =
-  document.getElementById(
-    "openPlayerButton2"
-  );
-
-const closePlayerButton =
-  document.getElementById(
-    "closePlayerButton"
-  );
-
-const backButton =
-  document.getElementById(
-    "backButton"
+    "fullDisc"
   );
 
 const miniDisc =
@@ -179,82 +144,59 @@ const miniDisc =
     "miniDisc"
   );
 
-const fullDisc =
-  document.getElementById(
-    "fullDisc"
-  );
-
 const miniProgress =
   document.getElementById(
     "miniProgress"
   );
 
+const currentAyahLabel =
+  document.getElementById(
+    "currentAyahLabel"
+  );
+
+const fullPlayerTitle =
+  document.getElementById(
+    "fullPlayerTitle"
+  );
+
+const fullPlayerReciter =
+  document.getElementById(
+    "fullPlayerReciter"
+  );
+
 
 /* =========================================================
-   AUDIO ELEMENTS
+   AUDIO
 ========================================================= */
 
-/*
- * Two audio elements are used.
- *
- * While Audio A is playing, Audio B can
- * preload the next ayah.
- *
- * This removes most of the delay between
- * ayahs on mobile browsers.
- */
-
-const audioA =
+const audio =
   new Audio();
 
-const audioB =
-  new Audio();
-
-
-audioA.preload =
+audio.preload =
   "auto";
-
-audioB.preload =
-  "auto";
-
-
-let activeAudio =
-  audioA;
-
-let standbyAudio =
-  audioB;
 
 
 /* =========================================================
    STATE
 ========================================================= */
 
-let surah =
-  null;
+let surah = null;
 
-let translation =
-  null;
+let translation = null;
 
-let currentAyahIndex =
-  0;
+let currentAyahIndex = 0;
 
-let playing =
-  false;
+let playing = false;
 
-let repeatSurah =
-  false;
+let repeatSurah = false;
 
-let playbackSpeed =
-  1;
+let playbackSpeed = 1;
 
 let reciter =
+  localStorage.getItem(
+    "quran_reciter"
+  ) ||
   "Alafasy_128kbps";
-
-let audioGeneration =
-  0;
-
-let nextPreloadedIndex =
-  null;
 
 
 /* =========================================================
@@ -263,22 +205,22 @@ let nextPreloadedIndex =
 
 const reciters = {
 
-  "Alafasy_128kbps":
+  Alafasy_128kbps:
     "Mishary Rashid Alafasy",
 
-  "Abdul_Basit_Murattal_192kbps":
+  Abdul_Basit_Murattal_192kbps:
     "Abdul Basit Abdul Samad",
 
-  "Abdurrahmaan_As-Sudais_192kbps":
+  Abdurrahmaan_As-Sudais_192kbps:
     "Abdul Rahman Al-Sudais",
 
-  "Husary_128kbps":
+  Husary_128kbps:
     "Mahmoud Khalil Al-Husary",
 
-  "Saood_ash-Shuraym_128kbps":
+  Saood_ash-Shuraym_128kbps:
     "Saud Al-Shuraim",
 
-  "Abu_Bakr_Ash-Shaatree_128kbps":
+  Abu_Bakr_Ash-Shaatree_128kbps:
     "Abu Bakr Al-Shatri"
 
 };
@@ -293,7 +235,7 @@ const BISMILLAH =
 
 
 /* =========================================================
-   HELPERS
+   NORMALIZE
 ========================================================= */
 
 function normalizeArabic(text) {
@@ -309,14 +251,6 @@ function normalizeArabic(text) {
       "ا"
     )
     .replace(
-      /ؤ/g,
-      "و"
-    )
-    .replace(
-      /ئ/g,
-      "ي"
-    )
-    .replace(
       /ـ/g,
       ""
     )
@@ -329,19 +263,39 @@ function normalizeArabic(text) {
 }
 
 
+/* =========================================================
+   REMOVE BISMILLAH
+========================================================= */
+
 function removeBismillah(text) {
 
   if (!text) {
     return "";
   }
 
-  const original =
-    text.trim();
+
+  const words =
+    text.trim().split(/\s+/);
+
+
+  if (
+    words.length < 4
+  ) {
+    return text;
+  }
+
+
+  const firstFour =
+    words
+      .slice(0, 4)
+      .join(" ");
+
 
   const normalized =
     normalizeArabic(
-      original
+      firstFour
     );
+
 
   const normalizedBismillah =
     normalizeArabic(
@@ -350,54 +304,55 @@ function removeBismillah(text) {
 
 
   if (
-    !normalized.startsWith(
-      normalizedBismillah
-    )
+    normalized ===
+    normalizedBismillah
   ) {
 
-    return original;
+    return words
+      .slice(4)
+      .join(" ")
+      .trim();
 
   }
 
 
   /*
-   * Remove the first four Arabic
-   * words because the API's first
-   * ayah can contain the Bismillah.
+   * Some API text uses slightly
+   * different diacritics.
+   *
+   * Check the first part as well.
    */
 
-  const words =
-    original.split(/\s+/);
-
-
   if (
-    words.length <= 4
+    normalized.startsWith(
+      normalizedBismillah
+    )
   ) {
 
-    return "";
+    return words
+      .slice(4)
+      .join(" ")
+      .trim();
 
   }
 
 
-  return words
-    .slice(4)
-    .join(" ")
-    .trim();
+  return text;
 
 }
 
 
+/* =========================================================
+   FORMAT TIME
+========================================================= */
+
 function formatTime(seconds) {
 
   if (
-    !Number.isFinite(
-      seconds
-    ) ||
+    !Number.isFinite(seconds) ||
     seconds < 0
   ) {
-
     return "0:00";
-
   }
 
 
@@ -406,6 +361,7 @@ function formatTime(seconds) {
       seconds / 60
     );
 
+
   const secondsPart =
     Math.floor(
       seconds % 60
@@ -413,13 +369,14 @@ function formatTime(seconds) {
 
 
   return (
-    `${minutes}:` +
-    `${String(
+    minutes +
+    ":" +
+    String(
       secondsPart
     ).padStart(
       2,
       "0"
-    )}`
+    )
   );
 
 }
@@ -429,17 +386,24 @@ function formatTime(seconds) {
    AUDIO URL
 ========================================================= */
 
-function getAudioUrl(
-  index
-) {
+function getAudioUrl(index) {
 
   const ayah =
     surah?.ayahs?.[index];
+
 
   if (!ayah) {
     return null;
   }
 
+
+  /*
+   * EveryAyah uses:
+   *
+   * 001001.mp3
+   * 001002.mp3
+   * etc.
+   */
 
   const surahPart =
     String(
@@ -460,10 +424,13 @@ function getAudioUrl(
 
 
   return (
-    `${AUDIO_BASE}/` +
-    `${reciter}/` +
-    `${surahPart}` +
-    `${ayahPart}.mp3`
+    AUDIO_BASE +
+    "/" +
+    reciter +
+    "/" +
+    surahPart +
+    ayahPart +
+    ".mp3"
   );
 
 }
@@ -477,212 +444,76 @@ async function loadSurah() {
 
   try {
 
-    const response =
-      await fetch(
-        `${API}/surah/${surahNumber}/editions/quran-uthmani,en.asad`
-      );
-
-
-    if (!response.ok) {
-      throw new Error(
-        "Failed to load Surah"
-      );
-    }
-
-
-    const result =
-      await response.json();
-
-
-    surah =
-      result.data[0];
-
-    translation =
-      result.data[1];
-
-
-    /*
-     * IMPORTANT:
-     *
-     * The Bismillah is visual only.
-     *
-     * It is removed from the first
-     * ayah for every Surah except
-     * Al-Fatihah and At-Tawbah.
-     */
-
-    if (
-      surah.number !== 1 &&
-      surah.number !== 9 &&
-      surah.ayahs.length > 0
-    ) {
-
-      surah.ayahs[0].displayText =
-        removeBismillah(
-          surah.ayahs[0].text
-        );
-
-    } else {
-
-      surah.ayahs.forEach(
-        ayah => {
-
-          ayah.displayText =
-            ayah.text;
-
-        }
-      );
-
-    }
-
-
-    /*
-     * Make sure all other ayahs
-     * have displayText.
-     */
-
-    surah.ayahs.forEach(
-      ayah => {
-
-        if (
-          ayah.displayText ===
-          undefined
-        ) {
-
-          ayah.displayText =
-            ayah.text;
-
-        }
-
-      }
+    console.log(
+      "Loading Surah:",
+      surahNumber
     );
 
 
-    updateTitles();
-
-    renderSurah();
-
-    showPlayer();
-
-    prepareCurrentAudio();
-
-  } catch (error) {
-
-    console.error(
-      error
-    );
-
-
-    content.innerHTML = `
-
-      <div
-        class="
-          py-20
-          text-center
-        "
-      >
-
-        <i
-          data-lucide="wifi-off"
-          class="
-async function loadSurah() {
-
-  try {
-
-    console.log("Loading Surah:", surahNumber);
-
     if (
-      !Number.isInteger(surahNumber) ||
+      !Number.isInteger(
+        surahNumber
+      ) ||
       surahNumber < 1 ||
       surahNumber > 114
     ) {
+
       throw new Error(
-        "Invalid Surah number: " + surahNumber
+        "Invalid Surah number."
       );
+
     }
 
 
     /*
-     * Load Arabic and English separately.
+     * STEP 1
      *
-     * This is more reliable than requesting
-     * multiple editions in one request.
+     * Load Arabic ONLY.
+     *
+     * Translation is deliberately
+     * not required for the page
+     * to work.
      */
 
     const arabicUrl =
       `${API}/surah/${surahNumber}/quran-uthmani`;
 
-    const englishUrl =
-      `${API}/surah/${surahNumber}/en.asad`;
-
 
     console.log(
-      "Arabic:",
+      "Fetching:",
       arabicUrl
     );
 
-    console.log(
-      "English:",
-      englishUrl
-    );
+
+    const arabicResponse =
+      await fetch(
+        arabicUrl,
+        {
+          method: "GET",
+          cache: "no-cache"
+        }
+      );
 
 
-    const [
-      arabicResponse,
-      englishResponse
-    ] = await Promise.all([
-
-      fetch(arabicUrl, {
-        method: "GET",
-        cache: "no-cache"
-      }),
-
-      fetch(englishUrl, {
-        method: "GET",
-        cache: "no-cache"
-      })
-
-    ]);
-
-
-    if (!arabicResponse.ok) {
+    if (
+      !arabicResponse.ok
+    ) {
 
       throw new Error(
-        `Arabic API error: ${arabicResponse.status}`
+        "Quran API returned HTTP " +
+        arabicResponse.status
       );
 
     }
 
 
-    if (!englishResponse.ok) {
-
-      throw new Error(
-        `English API error: ${englishResponse.status}`
-      );
-
-    }
-
-
-    const [
-      arabicResult,
-      englishResult
-    ] = await Promise.all([
-
-      arabicResponse.json(),
-
-      englishResponse.json()
-
-    ]);
+    const arabicResult =
+      await arabicResponse.json();
 
 
     console.log(
-      "Arabic API result:",
+      "Arabic result:",
       arabicResult
-    );
-
-    console.log(
-      "English API result:",
-      englishResult
     );
 
 
@@ -692,48 +523,20 @@ async function loadSurah() {
     ) {
 
       throw new Error(
-        "Arabic Quran data was not returned."
+        "Quran data was not returned."
       );
 
     }
 
-
-    if (
-      englishResult.code !== 200 ||
-      !englishResult.data
-    ) {
-
-      throw new Error(
-        "English translation was not returned."
-      );
-
-    }
-
-
-    /*
-     * Save data.
-     */
 
     surah =
       arabicResult.data;
 
-    translation =
-      englishResult.data;
-
 
     /*
-     * IMPORTANT:
+     * STEP 2
      *
-     * Bismillah is displayed separately.
-     *
-     * Therefore remove it from the first
-     * ayah for Surahs that contain it.
-     *
-     * Al-Fatihah:
-     * keep its actual first ayah.
-     *
-     * At-Tawbah:
-     * has no Bismillah.
+     * Prepare ayahs.
      */
 
     surah.ayahs.forEach(
@@ -746,6 +549,15 @@ async function loadSurah() {
     );
 
 
+    /*
+     * Remove Bismillah from the
+     * first ayah of normal Surahs.
+     *
+     * 1 = Al-Fatihah
+     *
+     * 9 = At-Tawbah
+     */
+
     if (
       surah.number !== 1 &&
       surah.number !== 9 &&
@@ -761,59 +573,38 @@ async function loadSurah() {
 
 
     /*
-     * Safety check.
+     * STEP 3
+     *
+     * Render immediately.
+     *
+     * Translation can fail without
+     * stopping the Quran reader.
      */
 
-    if (
-      !surah.ayahs ||
-      !surah.ayahs.length
-    ) {
-
-      throw new Error(
-        "This Surah contains no ayahs."
-      );
-
-    }
-
-
-    /*
-     * Make sure the number of Arabic
-     * and translation ayahs match.
-     */
-
-    console.log(
-      "Arabic ayahs:",
-      surah.ayahs.length
-    );
-
-    console.log(
-      "English ayahs:",
-      translation.ayahs.length
-    );
-
-
-    /*
-     * Update interface.
-     */
-
-    updateTitles();
+    translation = null;
 
     renderSurah();
 
+    updateTitles();
+
     showPlayer();
 
-    prepareCurrentAudio();
+    prepareAudio();
 
 
-    console.log(
-      "Surah loaded successfully:",
-      surah.englishName
-    );
+    /*
+     * STEP 4
+     *
+     * Translation is optional.
+     */
+
+    loadTranslation();
+
 
   } catch (error) {
 
     console.error(
-      "QURAN LOAD ERROR:",
+      "QURAN ERROR:",
       error
     );
 
@@ -822,7 +613,7 @@ async function loadSurah() {
 
       <div
         class="
-          py-16
+          py-20
           text-center
         "
       >
@@ -855,28 +646,25 @@ async function loadSurah() {
             font-bold
           "
         >
-          Couldn't load the Surah
+          Couldn't load the Quran
         </h2>
 
 
         <p
           class="
-            mx-auto
             mt-2
-            max-w-xs
             text-sm
             leading-6
             text-slate-400
           "
         >
-          Please check your internet connection
+          Check your internet connection
           and try again.
         </p>
 
 
         <button
           id="retryButton"
-          type="button"
           class="
             mt-6
             rounded-xl
@@ -911,20 +699,14 @@ async function loadSurah() {
     lucide.createIcons();
 
 
-    const retryButton =
-      document.getElementById(
+    document
+      .getElementById(
         "retryButton"
-      );
-
-
-    if (retryButton) {
-
-      retryButton.addEventListener(
+      )
+      ?.addEventListener(
         "click",
         loadSurah
       );
-
-    }
 
   }
 
@@ -932,31 +714,62 @@ async function loadSurah() {
 
 
 /* =========================================================
-   TITLES
+   OPTIONAL TRANSLATION
 ========================================================= */
 
-function updateTitles() {
+async function loadTranslation() {
 
-  surahTitle.textContent =
-    surah.englishName;
+  try {
 
-  audioTitle.textContent =
-    surah.englishName;
+    const response =
+      await fetch(
+        `${API}/surah/${surahNumber}/en.sahih`,
+        {
+          cache: "no-cache"
+        }
+      );
 
-  fullPlayerTitle.textContent =
-    surah.englishName;
 
-  audioSubtitle.textContent =
-    reciters[reciter];
+    if (!response.ok) {
+      return;
+    }
 
-  fullPlayerReciter.textContent =
-    reciters[reciter];
+
+    const result =
+      await response.json();
+
+
+    if (
+      result.code !== 200 ||
+      !result.data
+    ) {
+
+      return;
+
+    }
+
+
+    translation =
+      result.data;
+
+
+    renderTranslations();
+
+
+  } catch (error) {
+
+    console.warn(
+      "Translation unavailable:",
+      error
+    );
+
+  }
 
 }
 
 
 /* =========================================================
-   RENDER
+   RENDER SURAH
 ========================================================= */
 
 function renderSurah() {
@@ -966,11 +779,9 @@ function renderSurah() {
     <section
       class="
         mb-7
-        overflow-hidden
         rounded-3xl
         bg-gradient-to-br
         from-emerald-700
-        via-emerald-600
         to-teal-800
         p-6
         text-center
@@ -980,9 +791,8 @@ function renderSurah() {
       <p
         class="
           text-xs
-          font-semibold
           uppercase
-          tracking-[0.2em]
+          tracking-widest
           text-emerald-100
         "
       >
@@ -1003,13 +813,7 @@ function renderSurah() {
       </h2>
 
 
-      <h3
-        class="
-          mt-3
-          text-xl
-          font-bold
-        "
-      >
+      <h3 class="mt-3 text-xl font-bold">
         ${surah.englishName}
       </h3>
 
@@ -1041,12 +845,7 @@ function renderSurah() {
 
 
   /*
-   * Bismillah appears only once.
-   *
-   * Al-Fatihah is handled by its own
-   * Quran text.
-   *
-   * At-Tawbah has no Bismillah.
+   * ONE BISMILLAH ONLY.
    */
 
   if (
@@ -1059,7 +858,6 @@ function renderSurah() {
       <div
         class="
           mb-8
-          overflow-hidden
           text-center
         "
       >
@@ -1085,126 +883,107 @@ function renderSurah() {
 
   html += `
 
-    <div
-      class="
-        w-full
-        space-y-3
-      "
-    >
+    <div class="space-y-3">
 
-      ${surah.ayahs
-        .map(
-          (
-            ayah,
-            index
-          ) => {
+  `;
 
-            const translated =
+
+  surah.ayahs.forEach(
+    (
+      ayah,
+      index
+    ) => {
+
+      html += `
+
+        <article
+          id="ayah-${ayah.numberInSurah}"
+          data-index="${index}"
+          class="
+            ayah
+            rounded-2xl
+            p-4
+          "
+        >
+
+          <div
+            class="
+              mb-5
+              flex
+              items-center
+              justify-between
+            "
+          >
+
+            <span
+              class="
+                grid
+                h-9
+                w-9
+                place-items-center
+                rounded-full
+                bg-emerald-500/10
+                text-xs
+                font-bold
+                text-emerald-400
+              "
+            >
+              ${ayah.numberInSurah}
+            </span>
+
+
+            <button
+              class="
+                ayahPlayButton
+                grid
+                h-9
+                w-9
+                place-items-center
+                rounded-full
+                bg-white/5
+              "
+              data-index="${index}"
+            >
+
+              <i
+                data-lucide="play"
+                class="h-4 w-4"
+              ></i>
+
+            </button>
+
+          </div>
+
+
+          <p
+            dir="rtl"
+            class="quran-arabic text-white"
+          >
+            ${ayah.displayText}
+          </p>
+
+
+          <p
+            class="
               translation
-                .ayahs[index];
+              mt-5
+              text-sm
+              leading-7
+              text-slate-400
+            "
+            data-translation-index="${index}"
+          ></p>
+
+        </article>
+
+      `;
+
+    }
+  );
 
 
-            return `
-
-              <article
-                id="ayah-${ayah.numberInSurah}"
-                data-ayah-index="${index}"
-                class="
-                  ayah
-                  rounded-2xl
-                  p-4
-                "
-              >
-
-                <div
-                  class="
-                    mb-5
-                    flex
-                    items-center
-                    justify-between
-                  "
-                >
-
-                  <span
-                    class="
-                      grid
-                      h-9
-                      w-9
-                      shrink-0
-                      place-items-center
-                      rounded-full
-                      bg-emerald-500/10
-                      text-xs
-                      font-bold
-                      text-emerald-400
-                    "
-                  >
-                    ${ayah.numberInSurah}
-                  </span>
-
-
-                  <button
-                    type="button"
-                    class="
-                      ayahPlayButton
-                      grid
-                      h-9
-                      w-9
-                      place-items-center
-                      rounded-full
-                      border
-                      border-white/10
-                      bg-white/5
-                      text-slate-400
-                      active:scale-95
-                    "
-                    data-index="${index}"
-                  >
-
-                    <i
-                      data-lucide="play"
-                      class="h-4 w-4"
-                    ></i>
-
-                  </button>
-
-                </div>
-
-
-                <p
-                  dir="rtl"
-                  class="
-                    quran-arabic
-                    text-[27px]
-                    text-white
-                  "
-                >
-                  ${ayah.displayText}
-                </p>
-
-
-                <p
-                  class="
-                    translation
-                    mt-5
-                    text-sm
-                    leading-7
-                    text-slate-400
-                  "
-                >
-                  ${translated?.text || ""}
-                </p>
-
-              </article>
-
-            `;
-
-          }
-        )
-        .join("")}
-
+  html += `
     </div>
-
   `;
 
 
@@ -1223,14 +1002,10 @@ function renderSurah() {
           "click",
           () => {
 
-            const index =
+            playFromAyah(
               Number(
                 button.dataset.index
-              );
-
-
-            playFromAyah(
-              index
+              )
             );
 
           }
@@ -1246,7 +1021,90 @@ function renderSurah() {
 
 
 /* =========================================================
-   SHOW PLAYER
+   RENDER TRANSLATIONS
+========================================================= */
+
+function renderTranslations() {
+
+  if (
+    !translation?.ayahs
+  ) {
+
+    return;
+
+  }
+
+
+  document
+    .querySelectorAll(
+      "[data-translation-index]"
+    )
+    .forEach(
+      element => {
+
+        const index =
+          Number(
+            element.dataset.translationIndex
+          );
+
+
+        const item =
+          translation.ayahs[index];
+
+
+        if (item) {
+
+          element.textContent =
+            item.text;
+
+        }
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   TITLES
+========================================================= */
+
+function updateTitles() {
+
+  if (!surah) {
+    return;
+  }
+
+
+  const name =
+    reciters[reciter] ||
+    "Mishary Rashid Alafasy";
+
+
+  surahTitle.textContent =
+    surah.englishName;
+
+
+  audioTitle.textContent =
+    surah.englishName;
+
+
+  audioSubtitle.textContent =
+    name;
+
+
+  fullPlayerTitle.textContent =
+    surah.englishName;
+
+
+  fullPlayerReciter.textContent =
+    name;
+
+}
+
+
+/* =========================================================
+   PLAYER
 ========================================================= */
 
 function showPlayer() {
@@ -1259,10 +1117,10 @@ function showPlayer() {
 
 
 /* =========================================================
-   PREPARE CURRENT AUDIO
+   PREPARE AUDIO
 ========================================================= */
 
-function prepareCurrentAudio() {
+function prepareAudio() {
 
   const url =
     getAudioUrl(
@@ -1275,75 +1133,21 @@ function prepareCurrentAudio() {
   }
 
 
-  activeAudio.src =
+  audio.src =
     url;
 
-  activeAudio.playbackRate =
+
+  audio.playbackRate =
     playbackSpeed;
 
-  activeAudio.load();
 
-
-  preloadNextAyah();
+  audio.load();
 
 }
 
 
 /* =========================================================
-   PRELOAD NEXT AYAH
-========================================================= */
-
-function preloadNextAyah() {
-
-  const nextIndex =
-    currentAyahIndex + 1;
-
-
-  if (
-    nextIndex >=
-    surah.ayahs.length
-  ) {
-
-    nextPreloadedIndex =
-      null;
-
-    standbyAudio.removeAttribute(
-      "src"
-    );
-
-    standbyAudio.load();
-
-    return;
-
-  }
-
-
-  const url =
-    getAudioUrl(
-      nextIndex
-    );
-
-
-  standbyAudio.src =
-    url;
-
-  standbyAudio.preload =
-    "auto";
-
-  standbyAudio.playbackRate =
-    playbackSpeed;
-
-  standbyAudio.load();
-
-
-  nextPreloadedIndex =
-    nextIndex;
-
-}
-
-
-/* =========================================================
-   PLAY FROM AYAH
+   PLAY AYAH
 ========================================================= */
 
 async function playFromAyah(
@@ -1355,48 +1159,48 @@ async function playFromAyah(
   }
 
 
+  if (
+    index < 0 ||
+    index >=
+    surah.ayahs.length
+  ) {
+
+    return;
+
+  }
+
+
   currentAyahIndex =
     index;
 
 
-  activeAudio.pause();
-
-  standbyAudio.pause();
+  audio.pause();
 
 
-  activeAudio =
-    audioA;
-
-  standbyAudio =
-    audioB;
-
-
-  activeAudio.src =
+  audio.src =
     getAudioUrl(
       index
     );
 
 
-  activeAudio.playbackRate =
+  audio.playbackRate =
     playbackSpeed;
 
 
-  activeAudio.load();
+  audio.load();
 
 
   updateAyahUI();
 
-  preloadNextAyah();
-
 
   try {
 
-    await activeAudio.play();
+    await audio.play();
 
   } catch (error) {
 
     console.error(
-      "Playback failed:",
+      "Audio playback error:",
       error
     );
 
@@ -1416,13 +1220,11 @@ async function togglePlay() {
   }
 
 
-  if (
-    activeAudio.paused
-  ) {
+  if (audio.paused) {
 
     try {
 
-      await activeAudio.play();
+      await audio.play();
 
     } catch (error) {
 
@@ -1434,7 +1236,7 @@ async function togglePlay() {
 
   } else {
 
-    activeAudio.pause();
+    audio.pause();
 
   }
 
@@ -1445,81 +1247,75 @@ async function togglePlay() {
    AUDIO PLAY
 ========================================================= */
 
-function handlePlay() {
+audio.addEventListener(
+  "play",
+  () => {
 
-  playing =
-    true;
+    playing = true;
 
+    updatePlayUI();
 
-  updatePlayUI();
+    updateAyahUI();
 
-  updateVinyl();
+    updateVinyl();
 
-  updateAyahUI();
-
-}
+  }
+);
 
 
 /* =========================================================
    AUDIO PAUSE
 ========================================================= */
 
-function handlePause() {
+audio.addEventListener(
+  "pause",
+  () => {
 
-  /*
-   * Don't set playing false when
-   * we're internally changing from
-   * one ayah to the next.
-   */
+    playing = false;
 
-  if (
-    activeAudio.paused
-  ) {
+    updatePlayUI();
 
-    playing =
-      false;
+    updateVinyl();
 
   }
-
-
-  updatePlayUI();
-
-  updateVinyl();
-
-}
+);
 
 
 /* =========================================================
    AUDIO ENDED
 ========================================================= */
 
-function handleAudioEnded() {
+audio.addEventListener(
+  "ended",
+  () => {
 
-  const nextIndex =
-    currentAyahIndex + 1;
+    const next =
+      currentAyahIndex + 1;
 
 
-  /*
-   * End of entire Surah
-   */
-
-  if (
-    nextIndex >=
-    surah.ayahs.length
-  ) {
+    /*
+     * NEXT AYAH
+     */
 
     if (
-      repeatSurah
+      next <
+      surah.ayahs.length
     ) {
 
-      currentAyahIndex =
-        0;
+      playFromAyah(
+        next
+      );
+
+      return;
+
+    }
 
 
-      /*
-       * Start again from the
-       * beginning of the Surah.
-       */
+    /*
+     * SURAH FINISHED
+     */
+
+    if (repeatSurah) {
 
       playFromAyah(
         0
@@ -1531,265 +1327,40 @@ function handleAudioEnded() {
 
 
     /*
-     * Normal ending.
+     * STOP
      */
 
-    playing =
-      false;
+    playing = false;
 
     updatePlayUI();
 
     updateVinyl();
 
-    updateAyahUI();
-
-    return;
-
   }
-
-
-  /*
-   * Move to next ayah.
-   */
-
-  moveToNextAyah(
-    true
-  );
-
-}
+);
 
 
 /* =========================================================
-   NEXT AYAH
+   TIME
 ========================================================= */
 
-function nextAyah() {
+audio.addEventListener(
+  "timeupdate",
+  updateTime
+);
 
-  if (!surah) {
-    return;
-  }
 
+audio.addEventListener(
+  "loadedmetadata",
+  updateTime
+);
 
-  const nextIndex =
-    currentAyahIndex + 1;
 
-
-  if (
-    nextIndex >=
-    surah.ayahs.length
-  ) {
-
-    return;
-
-  }
-
-
-  moveToNextAyah(
-    playing
-  );
-
-}
-
-
-/* =========================================================
-   MOVE NEXT
-========================================================= */
-
-async function moveToNextAyah(
-  shouldPlay
-) {
-
-  const nextIndex =
-    currentAyahIndex + 1;
-
-
-  if (
-    nextIndex >=
-    surah.ayahs.length
-  ) {
-
-    return;
-
-  }
-
-
-  /*
-   * If the next ayah has already
-   * been preloaded, use it.
-   */
-
-  if (
-    nextPreloadedIndex ===
-    nextIndex
-  ) {
-
-    const oldActive =
-      activeAudio;
-
-
-    activeAudio =
-      standbyAudio;
-
-    standbyAudio =
-      oldActive;
-
-
-    currentAyahIndex =
-      nextIndex;
-
-
-    nextPreloadedIndex =
-      null;
-
-
-    activeAudio.currentTime =
-      0;
-
-
-    updateAyahUI();
-
-    preloadNextAyah();
-
-
-    if (
-      shouldPlay
-    ) {
-
-      try {
-
-        await activeAudio.play();
-
-      } catch (error) {
-
-        console.error(
-          error
-        );
-
-      }
-
-    }
-
-
-    return;
-
-  }
-
-
-  /*
-   * Fallback if preload wasn't
-   * ready in time.
-   */
-
-  currentAyahIndex =
-    nextIndex;
-
-
-  activeAudio.pause();
-
-
-  activeAudio.src =
-    getAudioUrl(
-      nextIndex
-    );
-
-
-  activeAudio.playbackRate =
-    playbackSpeed;
-
-
-  activeAudio.load();
-
-
-  updateAyahUI();
-
-  preloadNextAyah();
-
-
-  if (
-    shouldPlay
-  ) {
-
-    try {
-
-      await activeAudio.play();
-
-    } catch (error) {
-
-      console.error(
-        error
-      );
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   PREVIOUS AYAH
-========================================================= */
-
-function previousAyah() {
-
-  if (!surah) {
-    return;
-  }
-
-
-  /*
-   * If we're more than three
-   * seconds into the ayah,
-   * restart the current ayah.
-   */
-
-  if (
-    activeAudio.currentTime >
-    3
-  ) {
-
-    activeAudio.currentTime =
-      0;
-
-    return;
-
-  }
-
-
-  const previousIndex =
-    currentAyahIndex - 1;
-
-
-  if (
-    previousIndex < 0
-  ) {
-
-    activeAudio.currentTime =
-      0;
-
-    return;
-
-  }
-
-
-  playFromAyah(
-    previousIndex
-  );
-
-}
-
-
-/* =========================================================
-   SEEK
-========================================================= */
-
-function seekAudio(
-  value
-) {
+function updateTime() {
 
   if (
     !Number.isFinite(
-      activeAudio.duration
+      audio.duration
     )
   ) {
 
@@ -1798,50 +1369,21 @@ function seekAudio(
   }
 
 
-  const percent =
-    Number(value);
+  const current =
+    audio.currentTime;
 
-
-  activeAudio.currentTime =
-    (
-      percent / 100
-    ) *
-    activeAudio.duration;
-
-}
-
-
-/* =========================================================
-   TIME UPDATE
-========================================================= */
-
-function updateTimeUI() {
 
   const duration =
-    activeAudio.duration;
-
-
-  if (
-    !Number.isFinite(
-      duration
-    ) ||
-    duration <= 0
-  ) {
-
-    return;
-
-  }
-
-
-  const current =
-    activeAudio.currentTime;
+    audio.duration;
 
 
   const percentage =
-    (
-      current /
-      duration
-    ) * 100;
+    duration > 0
+      ? (
+          current /
+          duration
+        ) * 100
+      : 0;
 
 
   seekBar.value =
@@ -1857,30 +1399,122 @@ function updateTimeUI() {
   remainingTime.textContent =
     "-" +
     formatTime(
-      Math.max(
-        0,
-        duration -
-        current
-      )
+      duration -
+      current
     );
 
 
   miniProgress.style.width =
-    `${percentage}%`;
+    percentage + "%";
 
 }
 
 
 /* =========================================================
-   AYAH UI
+   SEEK
 ========================================================= */
 
-function updateAyahUI() {
+seekBar.addEventListener(
+  "input",
+  event => {
+
+    if (
+      !Number.isFinite(
+        audio.duration
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    audio.currentTime =
+      (
+        Number(
+          event.target.value
+        ) / 100
+      ) *
+      audio.duration;
+
+  }
+);
+
+
+/* =========================================================
+   NEXT
+========================================================= */
+
+function nextAyah() {
 
   if (!surah) {
     return;
   }
 
+
+  const next =
+    currentAyahIndex + 1;
+
+
+  if (
+    next <
+    surah.ayahs.length
+  ) {
+
+    playFromAyah(
+      next
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   PREVIOUS
+========================================================= */
+
+function previousAyah() {
+
+  if (!surah) {
+    return;
+  }
+
+
+  if (
+    audio.currentTime > 3
+  ) {
+
+    audio.currentTime =
+      0;
+
+    return;
+
+  }
+
+
+  const previous =
+    currentAyahIndex - 1;
+
+
+  if (
+    previous >= 0
+  ) {
+
+    playFromAyah(
+      previous
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   AYAH HIGHLIGHT
+========================================================= */
+
+function updateAyahUI() {
 
   document
     .querySelectorAll(
@@ -1898,7 +1532,7 @@ function updateAyahUI() {
 
 
   const ayah =
-    surah.ayahs[
+    surah?.ayahs?.[
       currentAyahIndex
     ];
 
@@ -1910,39 +1544,39 @@ function updateAyahUI() {
 
   const element =
     document.getElementById(
-      `ayah-${ayah.numberInSurah}`
+      "ayah-" +
+      ayah.numberInSurah
     );
 
 
-  if (element) {
-
-    element.classList.add(
-      "active"
-    );
-
-
-    if (playing) {
-
-      element.scrollIntoView({
-        behavior:
-          "smooth",
-        block:
-          "center"
-      });
-
-    }
-
+  if (!element) {
+    return;
   }
+
+
+  element.classList.add(
+    "active"
+  );
 
 
   currentAyahLabel.textContent =
     `Ayah ${ayah.numberInSurah} of ${surah.numberOfAyahs}`;
 
+
+  if (playing) {
+
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+  }
+
 }
 
 
 /* =========================================================
-   PLAY UI
+   PLAY BUTTON UI
 ========================================================= */
 
 function updatePlayUI() {
@@ -1957,11 +1591,7 @@ function updatePlayUI() {
 
     <i
       data-lucide="${icon}"
-      class="
-        h-5
-        w-5
-        ${playing ? "" : "fill-current"}
-      "
+      class="h-5 w-5"
     ></i>
 
   `;
@@ -1971,11 +1601,7 @@ function updatePlayUI() {
 
     <i
       data-lucide="${icon}"
-      class="
-        h-7
-        w-7
-        ${playing ? "" : "fill-current"}
-      "
+      class="h-7 w-7"
     ></i>
 
   `;
@@ -2023,13 +1649,7 @@ function toggleRepeat() {
 
 
   repeatButton.classList.toggle(
-    "border-emerald-500/50",
-    repeatSurah
-  );
-
-
-  repeatButton.classList.toggle(
-    "bg-emerald-500/10",
+    "border-emerald-400",
     repeatSurah
   );
 
@@ -2057,33 +1677,28 @@ const speeds = [
 
 function changeSpeed() {
 
-  const currentIndex =
+  const current =
     speeds.indexOf(
       playbackSpeed
     );
 
 
-  const nextIndex =
-    (
-      currentIndex + 1
-    ) %
-    speeds.length;
-
-
   playbackSpeed =
-    speeds[nextIndex];
+    speeds[
+      (
+        current + 1
+      ) %
+      speeds.length
+    ];
 
 
-  activeAudio.playbackRate =
-    playbackSpeed;
-
-
-  standbyAudio.playbackRate =
+  audio.playbackRate =
     playbackSpeed;
 
 
   speedLabel.textContent =
-    `${playbackSpeed}×`;
+    playbackSpeed +
+    "×";
 
 }
 
@@ -2092,139 +1707,86 @@ function changeSpeed() {
    RECITER
 ========================================================= */
 
-function changeReciter() {
-
-  const selected =
-    reciterSelect.value;
-
-
-  if (
-    !reciters[selected]
-  ) {
-
-    return;
-
-  }
+reciterSelect.value =
+  reciters[reciter]
+    ? reciter
+    : "Alafasy_128kbps";
 
 
-  reciter =
-    selected;
-
-
-  localStorage.setItem(
-    "quran_reciter",
-    reciter
-  );
-
-
-  const wasPlaying =
-    playing;
-
-
-  const savedTime =
-    activeAudio.currentTime;
-
-
-  /*
-   * Change reciter without
-   * changing the current ayah.
-   */
-
-  activeAudio.pause();
-
-  standbyAudio.pause();
-
-
-  activeAudio.src =
-    getAudioUrl(
-      currentAyahIndex
-    );
-
-
-  activeAudio.playbackRate =
-    playbackSpeed;
-
-
-  activeAudio.load();
-
-
-  activeAudio.addEventListener(
-    "loadedmetadata",
-    () => {
-
-      if (
-        Number.isFinite(
-          savedTime
-        ) &&
-        savedTime <
-        activeAudio.duration
-      ) {
-
-        activeAudio.currentTime =
-          savedTime;
-
-      }
-
-
-      if (
-        wasPlaying
-      ) {
-
-        activeAudio
-          .play()
-          .catch(
-            console.error
-          );
-
-      }
-
-    },
-    {
-      once: true
-    }
-  );
-
-
-  updateTitles();
-
-  preloadNextAyah();
-
-}
-
-
-/* =========================================================
-   LOAD SAVED RECITER
-========================================================= */
-
-function loadSavedReciter() {
-
-  const saved =
-    localStorage.getItem(
-      "quran_reciter"
-    );
-
-
-  if (
-    saved &&
-    reciters[saved]
-  ) {
+reciterSelect.addEventListener(
+  "change",
+  () => {
 
     reciter =
-      saved;
+      reciterSelect.value;
 
-    reciterSelect.value =
-      saved;
+
+    localStorage.setItem(
+      "quran_reciter",
+      reciter
+    );
+
+
+    const wasPlaying =
+      playing;
+
+
+    const position =
+      audio.currentTime;
+
+
+    audio.pause();
+
+
+    audio.src =
+      getAudioUrl(
+        currentAyahIndex
+      );
+
+
+    audio.playbackRate =
+      playbackSpeed;
+
+
+    audio.load();
+
+
+    updateTitles();
+
+
+    audio.addEventListener(
+      "loadedmetadata",
+      () => {
+
+        if (
+          position <
+          audio.duration
+        ) {
+
+          audio.currentTime =
+            position;
+
+        }
+
+
+        if (wasPlaying) {
+
+          audio.play();
+
+        }
+
+      },
+      {
+        once: true
+      }
+    );
 
   }
-
-
-  updateTitles();
-
-}
+);
 
 
 /* =========================================================
-   PLAYER OPEN
+   PLAYER OPEN / CLOSE
 ========================================================= */
 
 function openPlayer() {
@@ -2232,7 +1794,6 @@ function openPlayer() {
   playerSheet.classList.remove(
     "hidden"
   );
-
 
   playerOverlay.classList.remove(
     "hidden"
@@ -2286,7 +1847,7 @@ function closePlayer() {
 
 
 /* =========================================================
-   EVENT LISTENERS
+   BUTTON EVENTS
 ========================================================= */
 
 playButton.addEventListener(
@@ -2337,40 +1898,34 @@ speedButton.addEventListener(
 );
 
 
-seekBar.addEventListener(
-  "input",
-  event => {
-
-    seekAudio(
-      event.target.value
-    );
-
-  }
-);
+document
+  .getElementById(
+    "openPlayerButton"
+  )
+  .addEventListener(
+    "click",
+    openPlayer
+  );
 
 
-reciterSelect.addEventListener(
-  "change",
-  changeReciter
-);
+document
+  .getElementById(
+    "openPlayerButton2"
+  )
+  .addEventListener(
+    "click",
+    openPlayer
+  );
 
 
-openPlayerButton.addEventListener(
-  "click",
-  openPlayer
-);
-
-
-openPlayerButton2.addEventListener(
-  "click",
-  openPlayer
-);
-
-
-closePlayerButton.addEventListener(
-  "click",
-  closePlayer
-);
+document
+  .getElementById(
+    "closePlayerButton"
+  )
+  .addEventListener(
+    "click",
+    closePlayer
+  );
 
 
 playerOverlay.addEventListener(
@@ -2379,120 +1934,22 @@ playerOverlay.addEventListener(
 );
 
 
-backButton.addEventListener(
-  "click",
-  () => {
-
-    history.back();
-
-  }
-);
-
-
-/* =========================================================
-   AUDIO EVENTS
-========================================================= */
-
-[
-  audioA,
-  audioB
-].forEach(
-  audio => {
-
-    audio.addEventListener(
-      "play",
-      () => {
-
-        if (
-          audio ===
-          activeAudio
-        ) {
-
-          handlePlay();
-
-        }
-
-      }
-    );
-
-
-    audio.addEventListener(
-      "pause",
-      () => {
-
-        if (
-          audio ===
-          activeAudio
-        ) {
-
-          handlePause();
-
-        }
-
-      }
-    );
-
-
-    audio.addEventListener(
-      "timeupdate",
-      () => {
-
-        if (
-          audio ===
-          activeAudio
-        ) {
-
-          updateTimeUI();
-
-        }
-
-      }
-    );
-
-
-    audio.addEventListener(
-      "loadedmetadata",
-      () => {
-
-        if (
-          audio ===
-          activeAudio
-        ) {
-
-          updateTimeUI();
-
-        }
-
-      }
-    );
-
-
-    audio.addEventListener(
-      "ended",
-      () => {
-
-        if (
-          audio ===
-          activeAudio
-        ) {
-
-          handleAudioEnded();
-
-        }
-
-      }
-    );
-
-  }
-);
+document
+  .getElementById(
+    "backButton"
+  )
+  .addEventListener(
+    "click",
+    () => history.back()
+  );
 
 
 /* =========================================================
    START
 ========================================================= */
 
-loadSavedReciter();
+lucide.createIcons();
+
+updateTitles();
 
 loadSurah();
-
-lucide.createIcons();
