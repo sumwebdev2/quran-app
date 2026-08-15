@@ -74,12 +74,6 @@ const nextButton =
   );
 
 
-/*
-|--------------------------------------------------------------------------
-| AUDIO
-|--------------------------------------------------------------------------
-*/
-
 const audio =
   new Audio();
 
@@ -103,6 +97,151 @@ let timestamps = [];
 
 /*
 |--------------------------------------------------------------------------
+| BISMILLAH
+|--------------------------------------------------------------------------
+|
+| This is ONLY used to remove the Bismillah
+| from the first ayah's displayed text.
+|
+| It does NOT change ayah numbering.
+|
+*/
+
+const BISMILLAH =
+  "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
+
+
+/*
+|--------------------------------------------------------------------------
+| REMOVE BISMILLAH FROM FIRST AYAH
+|--------------------------------------------------------------------------
+*/
+
+function cleanFirstAyahText(
+  text
+) {
+
+  if (!text) {
+    return text;
+  }
+
+
+  let cleaned =
+    text.trim();
+
+
+  /*
+   * Some Quran editions use slightly
+   * different Unicode representations.
+   *
+   * Normalize the text before comparing.
+   */
+
+  const normalizeArabic =
+    value =>
+      value
+        .normalize("NFD")
+        .replace(
+          /[\u064B-\u065F\u0670]/g,
+          ""
+        )
+        .replace(
+          /\u0640/g,
+          ""
+        )
+        .replace(
+          /\s+/g,
+          " "
+        )
+        .trim();
+
+
+  const normalizedText =
+    normalizeArabic(
+      cleaned
+    );
+
+
+  const normalizedBismillah =
+    normalizeArabic(
+      BISMILLAH
+    );
+
+
+  /*
+   * If the entire first ayah starts
+   * with Bismillah, remove ONLY that
+   * prefix.
+   */
+
+  if (
+    normalizedText.startsWith(
+      normalizedBismillah
+    )
+  ) {
+
+    /*
+     * Find the actual length of the
+     * original Bismillah in the text.
+     */
+
+    const words =
+      BISMILLAH.split(" ");
+
+
+    /*
+     * More reliable approach:
+     * remove the first four Arabic
+     * words from the original string.
+     */
+
+    let remaining =
+      cleaned;
+
+
+    for (
+      let i = 0;
+      i < words.length;
+      i++
+    ) {
+
+      const firstSpace =
+        remaining.indexOf(" ");
+
+
+      if (
+        firstSpace === -1
+      ) {
+
+        remaining = "";
+
+        break;
+
+      }
+
+
+      remaining =
+        remaining
+          .slice(
+            firstSpace + 1
+          )
+          .trim();
+
+    }
+
+
+    return remaining;
+
+  }
+
+
+  return cleaned;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | LOAD SURAH
 |--------------------------------------------------------------------------
 */
@@ -111,17 +250,13 @@ async function loadSurah() {
 
   try {
 
-    /*
-     * Quran text.
-     */
-
-    const textResponse =
+    const response =
       await fetch(
         `${API}/surah/${surahNumber}/editions/quran-uthmani,en.asad`
       );
 
 
-    if (!textResponse.ok) {
+    if (!response.ok) {
 
       throw new Error(
         "Could not load Quran text"
@@ -130,27 +265,77 @@ async function loadSurah() {
     }
 
 
-    const textResult =
-      await textResponse.json();
+    const result =
+      await response.json();
 
 
     surah =
-      textResult.data[0];
+      result.data[0];
 
 
     translation =
-      textResult.data[1];
+      result.data[1];
 
 
     /*
      * IMPORTANT:
      *
-     * We preserve the API's actual
-     * ayah numbers.
+     * We keep the API's real ayahs.
      *
-     * We do NOT remove an ayah by
-     * matching Arabic text.
+     * We only clean the DISPLAYED TEXT
+     * of the first ayah.
+     *
+     * The actual ayah number remains 1.
      */
+
+    if (
+      surah.number !== 1 &&
+      surah.number !== 9 &&
+      surah.ayahs.length > 0
+    ) {
+
+      surah.ayahs[0].displayText =
+        cleanFirstAyahText(
+          surah.ayahs[0].text
+        );
+
+    } else {
+
+      surah.ayahs.forEach(
+        ayah => {
+
+          ayah.displayText =
+            ayah.text;
+
+        }
+      );
+
+    }
+
+
+    /*
+     * Surah 1 is special because
+     * Bismillah is part of the Surah
+     * itself.
+     *
+     * Surah 9 does not have Bismillah.
+     */
+
+    if (
+      surah.number === 1
+    ) {
+
+      surah.ayahs.forEach(
+        ayah => {
+
+          ayah.displayText =
+            ayah.text;
+
+        }
+      );
+
+    }
+
 
     title.textContent =
       surah.englishName;
@@ -163,16 +348,14 @@ async function loadSurah() {
     renderSurah();
 
 
-    /*
-     * Load continuous Surah audio.
-     */
-
     setupAudio();
 
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      error
+    );
 
 
     content.innerHTML = `
@@ -245,15 +428,13 @@ async function loadSurah() {
 
 /*
 |--------------------------------------------------------------------------
-| RENDER
+| RENDER SURAH
 |--------------------------------------------------------------------------
 */
 
 function renderSurah() {
 
   let html = `
-
-    <!-- SURAH HEADER -->
 
     <section
       class="
@@ -329,14 +510,17 @@ function renderSurah() {
 
 
   /*
-   * BISMILLAH
+   * BISMILLAH DISPLAY
    *
-   * It is visual only.
+   * Surah 9 has no Bismillah.
    *
-   * It is NOT rendered as an ayah.
+   * Surah 1 already contains it as
+   * part of the Quran text, so don't
+   * display another copy.
    */
 
   if (
+    surah.number !== 1 &&
     surah.number !== 9
   ) {
 
@@ -361,7 +545,7 @@ function renderSurah() {
           dir="rtl"
           lang="ar"
         >
-          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+          ${BISMILLAH}
         </p>
 
       </div>
@@ -391,6 +575,11 @@ function renderSurah() {
             translation.ayahs[index];
 
 
+          const displayText =
+            ayah.displayText ||
+            ayah.text;
+
+
           return `
 
             <article
@@ -407,8 +596,6 @@ function renderSurah() {
                 p-4
               "
             >
-
-              <!-- AYAH NUMBER -->
 
               <div
                 class="
@@ -462,8 +649,6 @@ function renderSurah() {
               </div>
 
 
-              <!-- ARABIC -->
-
               <p
                 class="
                   quran-arabic
@@ -475,11 +660,9 @@ function renderSurah() {
                 dir="rtl"
                 lang="ar"
               >
-                ${ayah.text}
+                ${displayText}
               </p>
 
-
-              <!-- TRANSLATION -->
 
               <p
                 class="
@@ -517,15 +700,11 @@ function renderSurah() {
 
 /*
 |--------------------------------------------------------------------------
-| AUDIO
+| AUDIO SETUP
 |--------------------------------------------------------------------------
 */
 
 function setupAudio() {
-
-  /*
-   * One continuous Surah file.
-   */
 
   audio.src =
     `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${surahNumber}.mp3`;
@@ -589,11 +768,8 @@ function setupAudio() {
 
       playing = false;
 
-      currentAyahIndex =
-        surah.ayahs.length - 1;
-
       highlightAyah(
-        currentAyahIndex
+        surah.ayahs.length - 1
       );
 
       updatePlayIcon();
@@ -642,7 +818,7 @@ playButton.addEventListener(
 
 /*
 |--------------------------------------------------------------------------
-| AUDIO TIME
+| AUDIO UPDATE
 |--------------------------------------------------------------------------
 */
 
@@ -682,15 +858,8 @@ function updateAudio() {
 
 
   /*
-   * Highlighting.
-   *
-   * This function first looks for
-   * real timing metadata.
-   *
-   * If timestamps are not available,
-   * it leaves the current highlight
-   * alone rather than pretending the
-   * timing is exact.
+   * Exact timestamps will control
+   * this once loaded.
    */
 
   updateAyahHighlight();
@@ -700,26 +869,29 @@ function updateAudio() {
 
 /*
 |--------------------------------------------------------------------------
-| AYAH TIMING
+| AYAH HIGHLIGHT
 |--------------------------------------------------------------------------
 */
 
 function updateAyahHighlight() {
 
+  /*
+   * Do not guess timing.
+   *
+   * Exact timestamp support will
+   * determine the active ayah.
+   */
+
   if (
     !timestamps.length
   ) {
-
-    /*
-     * No exact timestamps loaded yet.
-     */
 
     return;
 
   }
 
 
-  const current =
+  const time =
     audio.currentTime;
 
 
@@ -734,8 +906,8 @@ function updateAyahHighlight() {
 
 
     if (
-      current >= item.start &&
-      current < item.end
+      time >= item.start &&
+      time < item.end
     ) {
 
       if (
@@ -774,7 +946,9 @@ function highlightAyah(
 ) {
 
   document
-    .querySelectorAll(".ayah")
+    .querySelectorAll(
+      ".ayah"
+    )
     .forEach(
       element => {
 
@@ -833,8 +1007,7 @@ async function playFromAyah(
 ) {
 
   if (
-    !surah ||
-    !audio.duration
+    !surah
   ) {
 
     return;
@@ -851,11 +1024,6 @@ async function playFromAyah(
       )
     );
 
-
-  /*
-   * If exact timestamp data exists,
-   * jump exactly to that ayah.
-   */
 
   const timing =
     timestamps.find(
@@ -956,7 +1124,9 @@ previousButton.addEventListener(
       audio.currentTime =
         0;
 
-      highlightAyah(0);
+      highlightAyah(
+        0
+      );
 
       return;
 
@@ -991,15 +1161,11 @@ seekBar.addEventListener(
     }
 
 
-    const percentage =
-      Number(
-        seekBar.value
-      );
-
-
     audio.currentTime =
       (
-        percentage / 100
+        Number(
+          seekBar.value
+        ) / 100
       ) *
       audio.duration;
 
@@ -1040,7 +1206,7 @@ function updatePlayIcon() {
 
 /*
 |--------------------------------------------------------------------------
-| TIME FORMAT
+| TIME
 |--------------------------------------------------------------------------
 */
 
@@ -1074,7 +1240,10 @@ function formatTime(
     `${minutes}:` +
     `${String(
       remaining
-    ).padStart(2, "0")}`
+    ).padStart(
+      2,
+      "0"
+    )}`
   );
 
 }
