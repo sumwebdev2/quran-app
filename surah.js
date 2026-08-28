@@ -10,6 +10,7 @@ let isPlaying = false;
 let repeatSurah = false;
 let playbackSpeed = 1;
 let changingAyah = false;
+let playingBismillah = false;
 
 let reciter =
     localStorage.getItem("quran_reciter") ||
