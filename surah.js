@@ -76,12 +76,12 @@ const backButton = getElement("backButton");
 --------------------------------------------------------- */
 
 const reciters = {
-    Alafasy_128kbps: "Mishary Rashid Alafasy",
-    Abdul_Basit_Murattal_192kbps: "Abdul Basit Abdul Samad",
-    Abdurrahmaan_As-Sudais_192kbps: "Abdul Rahman Al-Sudais",
-    Husary_128kbps: "Mahmoud Khalil Al-Husary",
-    Saood_ash-Shuraym_128kbps: "Saud Al-Shuraim",
-    Abu_Bakr_Ash-Shaatree_128kbps: "Abu Bakr Al-Shatri"
+    "Alafasy_128kbps": "Mishary Rashid Alafasy",
+    "Abdul_Basit_Murattal_192kbps": "Abdul Basit Abdul Samad",
+    "Abdurrahmaan_As-Sudais_192kbps": "Abdul Rahman Al-Sudais",
+    "Husary_128kbps": "Mahmoud Khalil Al-Husary",
+    "Saood_ash-Shuraym_128kbps": "Saud Al-Shuraim",
+    "Abu_Bakr_Ash-Shaatree_128kbps": "Abu Bakr Al-Shatri"
 };
 
 
