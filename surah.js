@@ -201,6 +201,7 @@ function removeBismillah(text) {
 ========================================================= */
 
 function getAudioUrl(index) {
+function getAudioUrl(index) {
 
     if (
         !surah ||
@@ -210,20 +211,13 @@ function getAudioUrl(index) {
         return "";
     }
 
-
-    const ayah =
-        surah.ayahs[index];
-
+    const ayah = surah.ayahs[index];
 
     const surahPart =
-        String(surah.number)
-            .padStart(3, "0");
-
+        String(surah.number).padStart(3, "0");
 
     const ayahPart =
-        String(ayah.numberInSurah)
-            .padStart(3, "0");
-
+        String(ayah.numberInSurah).padStart(3, "0");
 
     return (
         AUDIO_BASE +
@@ -236,6 +230,16 @@ function getAudioUrl(index) {
     );
 }
 
+
+function getBismillahAudioUrl() {
+
+    return (
+        AUDIO_BASE +
+        "/" +
+        reciter +
+        "/001001.mp3"
+    );
+}
 
 /* =========================================================
    LOAD SURAH
