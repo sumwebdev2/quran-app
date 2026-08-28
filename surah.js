@@ -1,102 +1,209 @@
-const API = "https://api.alquran.cloud/v1";
-const EVERY_AYAH = "https://everyayah.com/data";
+/* =========================================================
+   QURAN READER
+   CONTINUOUS AYAH PLAYBACK
+========================================================= */
 
-const params = new URLSearchParams(window.location.search);
-const surahNumber = Number(params.get("surah") || 1);
+
+const API =
+  "https://api.alquran.cloud/v1";
+
+
+const AUDIO_BASE =
+  "https://everyayah.com/data";
+
+
+/* =========================================================
+   SURAH
+========================================================= */
+
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+
+const surahNumber =
+  Number(
+    params.get("surah") || 1
+  );
 
 
 /* =========================================================
    ELEMENTS
 ========================================================= */
 
-const title = document.getElementById("surahTitle");
-const content = document.getElementById("quranContent");
+const content =
+  document.getElementById(
+    "quranContent"
+  );
 
-const audioBar = document.getElementById("audioBar");
 
-const playButton = document.getElementById("playButton");
-const fullPlayButton = document.getElementById("fullPlayButton");
+const surahTitle =
+  document.getElementById(
+    "surahTitle"
+  );
 
-const previousButton =
-  document.getElementById("previousAyahButton");
 
-const nextButton =
-  document.getElementById("nextAyahButton");
+const audioBar =
+  document.getElementById(
+    "audioBar"
+  );
 
-const fullPreviousButton =
-  document.getElementById("fullPreviousButton");
-
-const fullNextButton =
-  document.getElementById("fullNextButton");
-
-const seekBar =
-  document.getElementById("seekBar");
-
-const fullSeekBar =
-  document.getElementById("fullSeekBar");
-
-const currentTimeEl =
-  document.getElementById("currentTime");
-
-const remainingTimeEl =
-  document.getElementById("remainingTime");
-
-const fullCurrentTime =
-  document.getElementById("fullCurrentTime");
-
-const fullRemainingTime =
-  document.getElementById("fullRemainingTime");
 
 const audioTitle =
-  document.getElementById("audioTitle");
+  document.getElementById(
+    "audioTitle"
+  );
+
 
 const audioSubtitle =
-  document.getElementById("audioSubtitle");
+  document.getElementById(
+    "audioSubtitle"
+  );
 
-const fullPlayerTitle =
-  document.getElementById("fullPlayerTitle");
 
-const fullPlayerReciter =
-  document.getElementById("fullPlayerReciter");
+const playButton =
+  document.getElementById(
+    "playButton"
+  );
 
-const playerSheet =
-  document.getElementById("playerSheet");
+
+const fullPlayButton =
+  document.getElementById(
+    "fullPlayButton"
+  );
+
+
+const previousButton =
+  document.getElementById(
+    "previousAyahButton"
+  );
+
+
+const nextButton =
+  document.getElementById(
+    "nextAyahButton"
+  );
+
+
+const fullPreviousButton =
+  document.getElementById(
+    "fullPreviousButton"
+  );
+
+
+const fullNextButton =
+  document.getElementById(
+    "fullNextButton"
+  );
+
+
+const seekBar =
+  document.getElementById(
+    "seekBar"
+  );
+
+
+const currentTime =
+  document.getElementById(
+    "currentTime"
+  );
+
+
+const remainingTime =
+  document.getElementById(
+    "remainingTime"
+  );
+
 
 const speedButton =
-  document.getElementById("speedButton");
+  document.getElementById(
+    "speedButton"
+  );
+
 
 const speedLabel =
-  document.getElementById("speedLabel");
+  document.getElementById(
+    "speedLabel"
+  );
+
 
 const repeatButton =
-  document.getElementById("repeatButton");
+  document.getElementById(
+    "repeatButton"
+  );
 
-const fullRepeatButton =
-  document.getElementById("fullRepeatButton");
 
 const repeatLabel =
-  document.getElementById("repeatLabel");
+  document.getElementById(
+    "repeatLabel"
+  );
+
 
 const reciterSelect =
-  document.getElementById("reciterSelect");
-
-const openPlayerButton =
-  document.getElementById("openPlayerButton");
-
-const openPlayerButton2 =
-  document.getElementById("openPlayerButton2");
-
-const closePlayerButton =
-  document.getElementById("closePlayerButton");
+  document.getElementById(
+    "reciterSelect"
+  );
 
 
-/* =========================================================
-   AUDIO
-========================================================= */
+const playerSheet =
+  document.getElementById(
+    "playerSheet"
+  );
 
-const audio = new Audio();
 
-audio.preload = "auto";
+const playerOverlay =
+  document.getElementById(
+    "playerOverlay"
+  );
+
+
+const fullDisc =
+  document.getElementById(
+    "fullDisc"
+  );
+
+
+const miniDisc =
+  document.getElementById(
+    "miniDisc"
+  );
+
+
+const miniProgress =
+  document.getElementById(
+    "miniProgress"
+  );
+
+
+const currentAyahLabel =
+  document.getElementById(
+    "currentAyahLabel"
+  );
+
+
+const fullPlayerTitle =
+  document.getElementById(
+    "fullPlayerTitle"
+  );
+
+
+const fullPlayerReciter =
+  document.getElementById(
+    "fullPlayerReciter"
+  );
+
+
+const audioA =
+  document.getElementById(
+    "audioA"
+  );
+
+
+const audioB =
+  document.getElementById(
+    "audioB"
+  );
 
 
 /* =========================================================
@@ -104,26 +211,44 @@ audio.preload = "auto";
 ========================================================= */
 
 let surah = null;
+
 let translation = null;
 
 let currentAyahIndex = 0;
 
 let playing = false;
 
-let repeatAyah = false;
+let repeatSurah = false;
 
 let playbackSpeed = 1;
 
-let reciter = "Alafasy_128kbps";
+let activeAudio = audioA;
 
-let loadToken = 0;
+let inactiveAudio = audioB;
+
+let transitionToken = 0;
+
+let surahDurations = [];
+
+let totalSurahDuration = 0;
+
+let accumulatedBeforeCurrent = 0;
+
+let switchingAudio = false;
+
+
+let reciter =
+  localStorage.getItem(
+    "quran_reciter"
+  ) ||
+  "Alafasy_128kbps";
 
 
 /* =========================================================
    RECITERS
 ========================================================= */
 
-const reciterNames = {
+const reciters = {
 
   "Alafasy_128kbps":
     "Mishary Rashid Alafasy",
@@ -155,10 +280,12 @@ const BISMILLAH =
 
 
 /* =========================================================
-   ARABIC NORMALIZATION
+   NORMALIZE ARABIC
 ========================================================= */
 
-function normalizeArabic(text) {
+function normalizeArabic(
+  text
+) {
 
   return text
     .normalize("NFD")
@@ -166,11 +293,18 @@ function normalizeArabic(text) {
       /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g,
       ""
     )
-    .replace(/[إأٱآ]/g, "ا")
-    .replace(/ؤ/g, "و")
-    .replace(/ئ/g, "ي")
-    .replace(/ـ/g, "")
-    .replace(/\s+/g, " ")
+    .replace(
+      /[إأٱآ]/g,
+      "ا"
+    )
+    .replace(
+      /ـ/g,
+      ""
+    )
+    .replace(
+      /\s+/g,
+      " "
+    )
     .trim();
 
 }
@@ -180,51 +314,170 @@ function normalizeArabic(text) {
    REMOVE BISMILLAH
 ========================================================= */
 
-function removeBismillah(text) {
+function removeBismillah(
+  text
+) {
 
   if (!text) {
-    return text;
+    return "";
   }
 
-  const original = text.trim();
 
-  const normalizedText =
-    normalizeArabic(original);
+  const words =
+    text.trim().split(/\s+/);
 
-  const normalizedBismillah =
-    normalizeArabic(BISMILLAH);
 
   if (
-    normalizedText.startsWith(
+    words.length < 4
+  ) {
+
+    return text;
+
+  }
+
+
+  const firstFour =
+    words
+      .slice(0, 4)
+      .join(" ");
+
+
+  const normalized =
+    normalizeArabic(
+      firstFour
+    );
+
+
+  const normalizedBismillah =
+    normalizeArabic(
+      BISMILLAH
+    );
+
+
+  if (
+    normalized ===
+    normalizedBismillah
+  ) {
+
+    return words
+      .slice(4)
+      .join(" ")
+      .trim();
+
+  }
+
+
+  if (
+    normalized.startsWith(
       normalizedBismillah
     )
   ) {
 
-    let result = original;
-
-    for (let i = 0; i < 4; i++) {
-
-      result = result.trim();
-
-      const match =
-        result.match(/^\S+/);
-
-      if (!match) {
-        break;
-      }
-
-      result =
-        result
-          .slice(match[0].length)
-          .trim();
-
-    }
-
-    return result;
+    return words
+      .slice(4)
+      .join(" ")
+      .trim();
 
   }
 
-  return original;
+
+  return text;
+
+}
+
+
+/* =========================================================
+   FORMAT TIME
+========================================================= */
+
+function formatTime(
+  seconds
+) {
+
+  if (
+    !Number.isFinite(
+      seconds
+    ) ||
+    seconds < 0
+  ) {
+
+    return "0:00";
+
+  }
+
+
+  const minutes =
+    Math.floor(
+      seconds / 60
+    );
+
+
+  const secondsPart =
+    Math.floor(
+      seconds % 60
+    );
+
+
+  return (
+    minutes +
+    ":" +
+    String(
+      secondsPart
+    ).padStart(
+      2,
+      "0"
+    )
+  );
+
+}
+
+
+/* =========================================================
+   AUDIO URL
+========================================================= */
+
+function getAudioUrl(
+  index
+) {
+
+  const ayah =
+    surah?.ayahs?.[
+      index
+    ];
+
+
+  if (!ayah) {
+    return null;
+  }
+
+
+  const surahPart =
+    String(
+      surah.number
+    ).padStart(
+      3,
+      "0"
+    );
+
+
+  const ayahPart =
+    String(
+      ayah.numberInSurah
+    ).padStart(
+      3,
+      "0"
+    );
+
+
+  return (
+    AUDIO_BASE +
+    "/" +
+    reciter +
+    "/" +
+    surahPart +
+    ayahPart +
+    ".mp3"
+  );
 
 }
 
@@ -237,24 +490,63 @@ async function loadSurah() {
 
   try {
 
-    const response =
-      await fetch(
-        `${API}/surah/${surahNumber}/editions/quran-uthmani,en.asad`
+    if (
+      !Number.isInteger(
+        surahNumber
+      ) ||
+      surahNumber < 1 ||
+      surahNumber > 114
+    ) {
+
+      throw new Error(
+        "Invalid Surah number."
       );
 
-    if (!response.ok) {
-      throw new Error("Unable to load Surah");
     }
+
+
+    const response =
+      await fetch(
+        `${API}/surah/${surahNumber}/quran-uthmani`,
+        {
+          cache: "no-cache"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Quran API returned HTTP " +
+        response.status
+      );
+
+    }
+
 
     const result =
       await response.json();
 
+
+    if (
+      result.code !== 200 ||
+      !result.data
+    ) {
+
+      throw new Error(
+        "Quran data was not returned."
+      );
+
+    }
+
+
     surah =
-      result.data[0];
+      result.data;
 
-    translation =
-      result.data[1];
 
+    /*
+     * Prepare ayahs.
+     */
 
     surah.ayahs.forEach(
       ayah => {
@@ -266,10 +558,16 @@ async function loadSurah() {
     );
 
 
+    /*
+     * Remove Bismillah from first
+     * numbered ayah on Surahs where
+     * it is displayed separately.
+     */
+
     if (
       surah.number !== 1 &&
       surah.number !== 9 &&
-      surah.ayahs.length
+      surah.ayahs.length > 0
     ) {
 
       surah.ayahs[0].displayText =
@@ -280,39 +578,90 @@ async function loadSurah() {
     }
 
 
-    title.textContent =
-      surah.englishName;
-
-    audioTitle.textContent =
-      surah.englishName;
-
-    fullPlayerTitle.textContent =
-      surah.englishName;
-
-
     renderSurah();
 
-    setupAudio();
+    updateTitles();
+
+    showPlayer();
+
+    prepareAudio();
+
+
+    /*
+     * Translation is optional.
+     */
+
+    loadTranslation();
+
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "QURAN ERROR:",
+      error
+    );
+
 
     content.innerHTML = `
 
-      <div class="py-16 text-center">
+      <div
+        class="
+          py-20
+          text-center
+        "
+      >
 
-        <p class="font-semibold">
-          Couldn't load Surah
-        </p>
+        <div
+          class="
+            mx-auto
+            grid
+            h-16
+            w-16
+            place-items-center
+            rounded-full
+            bg-red-500/10
+            text-red-400
+          "
+        >
 
-        <button
-          onclick="loadSurah()"
+          <i
+            data-lucide="wifi-off"
+            class="h-7 w-7"
+          ></i>
+
+        </div>
+
+
+        <h2
           class="
             mt-5
+            text-lg
+            font-bold
+          "
+        >
+          Couldn't load the Quran
+        </h2>
+
+
+        <p
+          class="
+            mt-2
+            text-sm
+            text-slate-400
+          "
+        >
+          Check your internet connection
+          and try again.
+        </p>
+
+
+        <button
+          id="retryButton"
+          class="
+            mt-6
             rounded-xl
             bg-emerald-500
-            px-5
+            px-6
             py-3
             font-semibold
             text-slate-950
@@ -324,6 +673,74 @@ async function loadSurah() {
       </div>
 
     `;
+
+
+    lucide.createIcons();
+
+
+    document
+      .getElementById(
+        "retryButton"
+      )
+      ?.addEventListener(
+        "click",
+        loadSurah
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   TRANSLATION
+========================================================= */
+
+async function loadTranslation() {
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/surah/${surahNumber}/en.sahih`,
+        {
+          cache: "no-cache"
+        }
+      );
+
+
+    if (!response.ok) {
+      return;
+    }
+
+
+    const result =
+      await response.json();
+
+
+    if (
+      result.code !== 200 ||
+      !result.data
+    ) {
+
+      return;
+
+    }
+
+
+    translation =
+      result.data;
+
+
+    renderTranslations();
+
+
+  } catch (error) {
+
+    console.warn(
+      "Translation unavailable",
+      error
+    );
 
   }
 
@@ -340,41 +757,70 @@ function renderSurah() {
 
     <section
       class="
-        mb-8
+        mb-7
         rounded-3xl
         bg-gradient-to-br
-        from-emerald-600
+        from-emerald-700
         to-teal-800
         p-6
         text-center
       "
     >
 
-      <p class="text-sm text-emerald-100">
+      <p
+        class="
+          text-xs
+          uppercase
+          tracking-widest
+          text-emerald-100
+        "
+      >
         Surah ${surah.number}
       </p>
 
+
       <h2
+        dir="rtl"
         class="
           mt-2
           font-arabic
           text-4xl
           font-bold
         "
-        dir="rtl"
       >
         ${surah.name}
       </h2>
 
-      <h3 class="mt-3 text-xl font-bold">
+
+      <h3
+        class="
+          mt-3
+          text-xl
+          font-bold
+        "
+      >
         ${surah.englishName}
       </h3>
 
-      <p class="mt-1 text-sm text-emerald-100">
+
+      <p
+        class="
+          mt-1
+          text-sm
+          text-emerald-100
+        "
+      >
         ${surah.englishNameTranslation}
       </p>
 
-      <p class="mt-3 text-xs text-emerald-100">
+
+      <p
+        class="
+          mt-3
+          text-xs
+          text-emerald-100
+        "
+      >
         ${surah.numberOfAyahs} Ayahs
       </p>
 
@@ -383,6 +829,10 @@ function renderSurah() {
   `;
 
 
+  /*
+   * One Bismillah.
+   */
+
   if (
     surah.number !== 1 &&
     surah.number !== 9
@@ -390,16 +840,21 @@ function renderSurah() {
 
     html += `
 
-      <div class="mb-8 overflow-hidden text-center">
+      <div
+        class="
+          mb-8
+          text-center
+        "
+      >
 
         <p
+          dir="rtl"
           class="
             font-arabic
             text-3xl
             leading-loose
             text-slate-200
           "
-          dir="rtl"
         >
           ${BISMILLAH}
         </p>
@@ -412,112 +867,109 @@ function renderSurah() {
 
 
   html += `
+    <div class="space-y-3">
+  `;
 
-    <div class="w-full space-y-5">
 
-      ${surah.ayahs.map(
-        (ayah, index) => {
+  surah.ayahs.forEach(
+    (
+      ayah,
+      index
+    ) => {
 
-          const translated =
-            translation.ayahs[index];
+      html += `
 
-          return `
+        <article
+          id="ayah-${ayah.numberInSurah}"
+          data-index="${index}"
+          class="
+            ayah
+            rounded-2xl
+            p-4
+          "
+        >
 
-            <article
-              id="ayah-${ayah.numberInSurah}"
-              data-ayah-index="${index}"
+          <div
+            class="
+              mb-5
+              flex
+              items-center
+              justify-between
+            "
+          >
+
+            <span
               class="
-                ayah
-                rounded-2xl
-                p-4
+                grid
+                h-9
+                w-9
+                place-items-center
+                rounded-full
+                bg-emerald-500/10
+                text-xs
+                font-bold
+                text-emerald-400
               "
             >
-
-              <div
-                class="
-                  mb-5
-                  flex
-                  items-center
-                  justify-between
-                "
-              >
-
-                <span
-                  class="
-                    grid
-                    h-9
-                    w-9
-                    shrink-0
-                    place-items-center
-                    rounded-full
-                    bg-emerald-500/10
-                    text-xs
-                    font-bold
-                    text-emerald-400
-                  "
-                >
-                  ${ayah.numberInSurah}
-                </span>
+              ${ayah.numberInSurah}
+            </span>
 
 
-                <button
-                  type="button"
-                  class="
-                    ayah-play-button
-                    rounded-full
-                    border
-                    border-white/10
-                    p-2.5
-                    text-slate-400
-                  "
-                  data-index="${index}"
-                >
+            <button
+              class="
+                ayahPlayButton
+                grid
+                h-9
+                w-9
+                place-items-center
+                rounded-full
+                bg-white/5
+              "
+              data-index="${index}"
+            >
 
-                  <i
-                    data-lucide="play"
-                    class="h-4 w-4"
-                  ></i>
+              <i
+                data-lucide="play"
+                class="h-4 w-4"
+              ></i>
 
-                </button>
+            </button>
 
-              </div>
-
-
-              <p
-                class="
-                  quran-arabic
-                  font-arabic
-                  text-right
-                  text-[28px]
-                  text-white
-                "
-                dir="rtl"
-              >
-                ${ayah.displayText}
-              </p>
+          </div>
 
 
-              <p
-                class="
-                  translation
-                  mt-5
-                  text-sm
-                  leading-7
-                  text-slate-400
-                "
-              >
-                ${translated.text}
-              </p>
+          <p
+            dir="rtl"
+            class="
+              quran-arabic
+              text-white
+            "
+          >
+            ${ayah.displayText}
+          </p>
 
-            </article>
 
-          `;
+          <p
+            class="
+              translation
+              mt-5
+              text-sm
+              leading-7
+              text-slate-400
+            "
+            data-translation-index="${index}"
+          ></p>
 
-        }
-      ).join("")}
+        </article>
 
+      `;
+
+    }
+  );
+
+
+  html += `
     </div>
-
   `;
 
 
@@ -525,15 +977,9 @@ function renderSurah() {
     html;
 
 
-  /*
-   * IMPORTANT:
-   * Attach ayah buttons after
-   * rendering them.
-   */
-
   document
     .querySelectorAll(
-      ".ayah-play-button"
+      ".ayahPlayButton"
     )
     .forEach(
       button => {
@@ -542,13 +988,10 @@ function renderSurah() {
           "click",
           () => {
 
-            const index =
+            playFromAyah(
               Number(
                 button.dataset.index
-              );
-
-            playFromAyah(
-              index
+              )
             );
 
           }
@@ -564,261 +1007,416 @@ function renderSurah() {
 
 
 /* =========================================================
-   AUDIO URL
+   TRANSLATIONS
 ========================================================= */
 
-function getAyahAudioUrl(index) {
+function renderTranslations() {
 
-  const ayah =
-    surah.ayahs[index];
+  if (
+    !translation?.ayahs
+  ) {
 
-  if (!ayah) {
-    return null;
+    return;
+
   }
 
-  const surahPart =
-    String(
-      surah.number
-    ).padStart(
-      3,
-      "0"
-    );
 
-  const ayahPart =
-    String(
-      ayah.numberInSurah
-    ).padStart(
-      3,
-      "0"
-    );
+  document
+    .querySelectorAll(
+      "[data-translation-index]"
+    )
+    .forEach(
+      element => {
 
-  return (
-    `${EVERY_AYAH}/` +
-    `${reciter}/` +
-    `${surahPart}${ayahPart}.mp3`
-  );
+        const index =
+          Number(
+            element.dataset.translationIndex
+          );
+
+
+        const item =
+          translation.ayahs[
+            index
+          ];
+
+
+        if (item) {
+
+          element.textContent =
+            item.text;
+
+        }
+
+      }
+    );
 
 }
 
 
 /* =========================================================
-   SETUP AUDIO
+   TITLES
 ========================================================= */
 
-function setupAudio() {
+function updateTitles() {
+
+  if (!surah) {
+    return;
+  }
+
+
+  const name =
+    reciters[reciter] ||
+    "Mishary Rashid Alafasy";
+
+
+  surahTitle.textContent =
+    surah.englishName;
+
+
+  audioTitle.textContent =
+    surah.englishName;
+
+
+  audioSubtitle.textContent =
+    name;
+
+
+  fullPlayerTitle.textContent =
+    surah.englishName;
+
+
+  fullPlayerReciter.textContent =
+    name;
+
+}
+
+
+/* =========================================================
+   SHOW PLAYER
+========================================================= */
+
+function showPlayer() {
 
   audioBar.classList.remove(
     "hidden"
   );
 
-  audio.playbackRate =
+}
+
+
+/* =========================================================
+   PREPARE CURRENT AUDIO
+========================================================= */
+
+function prepareAudio() {
+
+  const url =
+    getAudioUrl(
+      currentAyahIndex
+    );
+
+
+  if (!url) {
+    return;
+  }
+
+
+  activeAudio.pause();
+
+  inactiveAudio.pause();
+
+
+  activeAudio.src =
+    url;
+
+
+  activeAudio.playbackRate =
     playbackSpeed;
 
 
-  audio.addEventListener(
-    "loadedmetadata",
-    updateTimes
-  );
-
-  audio.addEventListener(
-    "timeupdate",
-    updateTimes
-  );
-
-
-  audio.addEventListener(
-    "play",
-    () => {
-
-      playing = true;
-
-      updatePlayButtons();
-
-    }
-  );
-
-
-  audio.addEventListener(
-    "pause",
-    () => {
-
-      playing = false;
-
-      updatePlayButtons();
-
-    }
-  );
-
-
-  audio.addEventListener(
-    "ended",
-    handleAyahEnded
-  );
-
-
-  loadAyahAudio(
-    currentAyahIndex,
-    false
-  );
+  activeAudio.load();
 
 }
 
 
 /* =========================================================
-   LOAD AYAH
+   PRELOAD NEXT AYAH
 ========================================================= */
 
-function loadAyahAudio(
-  index,
-  autoPlay = false
+function preloadNextAyah() {
+
+  const nextIndex =
+    currentAyahIndex + 1;
+
+
+  if (
+    nextIndex >=
+    surah.ayahs.length
+  ) {
+
+    inactiveAudio.removeAttribute(
+      "src"
+    );
+
+    return;
+
+  }
+
+
+  const nextUrl =
+    getAudioUrl(
+      nextIndex
+    );
+
+
+  if (!nextUrl) {
+    return;
+  }
+
+
+  inactiveAudio.pause();
+
+  inactiveAudio.src =
+    nextUrl;
+
+  inactiveAudio.playbackRate =
+    playbackSpeed;
+
+  inactiveAudio.load();
+
+}
+
+
+/* =========================================================
+   START AYAH
+========================================================= */
+
+async function playFromAyah(
+  index
 ) {
 
   if (!surah) {
     return;
   }
 
-  const ayah =
-    surah.ayahs[index];
 
-  if (!ayah) {
+  if (
+    index < 0 ||
+    index >=
+    surah.ayahs.length
+  ) {
+
     return;
+
   }
+
+
+  transitionToken++;
 
 
   currentAyahIndex =
     index;
 
 
-  const token =
-    ++loadToken;
+  switchingAudio = true;
 
 
-  highlightAyah(
-    index
-  );
+  /*
+   * Stop both audio elements.
+   */
+
+  audioA.pause();
+
+  audioB.pause();
+
+
+  /*
+   * Use audio A as the current
+   * element every time we manually
+   * jump to an ayah.
+   */
+
+  activeAudio =
+    audioA;
+
+  inactiveAudio =
+    audioB;
 
 
   const url =
-    getAyahAudioUrl(
+    getAudioUrl(
       index
     );
 
 
-  audio.pause();
-
-  audio.src =
+  activeAudio.src =
     url;
 
-  audio.load();
 
-
-  audio.playbackRate =
+  activeAudio.playbackRate =
     playbackSpeed;
 
 
-  if (autoPlay) {
-
-    const playWhenReady =
-      () => {
-
-        if (
-          token !==
-          loadToken
-        ) {
-          return;
-        }
-
-        audio
-          .play()
-          .catch(
-            error =>
-              console.error(
-                error
-              )
-          );
-
-      };
+  activeAudio.load();
 
 
-    audio.addEventListener(
-      "canplay",
-      playWhenReady,
-      {
-        once: true
-      }
+  updateAyahUI();
+
+
+  /*
+   * Preload next ayah into B.
+   */
+
+  preloadNextAyah();
+
+
+  try {
+
+    await activeAudio.play();
+
+  } catch (error) {
+
+    console.error(
+      "Playback error:",
+      error
     );
 
   }
 
-}
 
-
-/* =========================================================
-   PLAY FROM AYAH
-========================================================= */
-
-function playFromAyah(index) {
-
-  loadAyahAudio(
-    index,
-    true
-  );
+  switchingAudio = false;
 
 }
 
 
 /* =========================================================
-   AYAH END
+   CONTINUE TO NEXT AYAH
 ========================================================= */
 
-function handleAyahEnded() {
+async function continueToNextAyah() {
 
-  if (
-    repeatAyah
-  ) {
-
-    audio.currentTime =
-      0;
-
-    audio
-      .play()
-      .catch(
-        console.error
-      );
-
+  if (!surah) {
     return;
-
   }
 
 
-  const next =
+  const nextIndex =
     currentAyahIndex + 1;
 
 
+  /*
+   * END OF SURAH
+   */
+
   if (
-    next >=
+    nextIndex >=
     surah.ayahs.length
   ) {
 
+    if (repeatSurah) {
+
+      currentAyahIndex = 0;
+
+      /*
+       * Start again.
+       */
+
+      activeAudio =
+        audioA;
+
+      inactiveAudio =
+        audioB;
+
+
+      await playFromAyah(
+        0
+      );
+
+      return;
+
+    }
+
+
     playing = false;
 
-    updatePlayButtons();
+    updatePlayUI();
+
+    updateVinyl();
+
+    updateSurahProgress();
 
     return;
 
   }
 
 
-  loadAyahAudio(
-    next,
-    true
-  );
+  /*
+   * The next ayah has already been
+   * loaded into inactiveAudio.
+   */
+
+  const oldAudio =
+    activeAudio;
+
+
+  const nextAudio =
+    inactiveAudio;
+
+
+  currentAyahIndex =
+    nextIndex;
+
+
+  activeAudio =
+    nextAudio;
+
+
+  inactiveAudio =
+    oldAudio;
+
+
+  updateAyahUI();
+
+
+  /*
+   * Preload the ayah after the
+   * next one.
+   */
+
+  preloadNextAyah();
+
+
+  try {
+
+    await activeAudio.play();
+
+  } catch (error) {
+
+    console.error(
+      "Next ayah playback error:",
+      error
+    );
+
+    /*
+     * Fallback: directly load it.
+     */
+
+    activeAudio.src =
+      getAudioUrl(
+        currentAyahIndex
+      );
+
+    activeAudio.load();
+
+    await activeAudio.play();
+
+  }
 
 }
 
 
 /* =========================================================
-   PLAY / PAUSE
+   TOGGLE PLAY
 ========================================================= */
 
 async function togglePlay() {
@@ -829,85 +1427,610 @@ async function togglePlay() {
 
 
   if (
-    audio.paused
+    activeAudio.paused
   ) {
 
     try {
 
-      await audio.play();
+      /*
+       * If the current audio hasn't
+       * loaded yet, prepare it.
+       */
+
+      if (
+        !activeAudio.src
+      ) {
+
+        activeAudio.src =
+          getAudioUrl(
+            currentAyahIndex
+          );
+
+        activeAudio.load();
+
+      }
+
+
+      await activeAudio.play();
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "Play error:",
+        error
+      );
 
     }
 
   } else {
 
-    audio.pause();
+    activeAudio.pause();
 
   }
 
 }
 
 
-playButton.addEventListener(
-  "click",
-  togglePlay
+/* =========================================================
+   AUDIO EVENTS
+========================================================= */
+
+audioA.addEventListener(
+  "play",
+  () => {
+
+    if (
+      activeAudio !== audioA
+    ) {
+
+      return;
+
+    }
+
+
+    playing = true;
+
+    updatePlayUI();
+
+    updateAyahUI();
+
+    updateVinyl();
+
+  }
 );
 
-fullPlayButton.addEventListener(
-  "click",
-  togglePlay
+
+audioB.addEventListener(
+  "play",
+  () => {
+
+    if (
+      activeAudio !== audioB
+    ) {
+
+      return;
+
+    }
+
+
+    playing = true;
+
+    updatePlayUI();
+
+    updateAyahUI();
+
+    updateVinyl();
+
+  }
 );
 
 
 /* =========================================================
-   NEXT
+   AUDIO ENDED
+========================================================= */
+
+audioA.addEventListener(
+  "ended",
+  () => {
+
+    if (
+      activeAudio !== audioA
+    ) {
+
+      return;
+
+    }
+
+
+    continueToNextAyah();
+
+  }
+);
+
+
+audioB.addEventListener(
+  "ended",
+  () => {
+
+    if (
+      activeAudio !== audioB
+    ) {
+
+      return;
+
+    }
+
+
+    continueToNextAyah();
+
+  }
+);
+
+
+/* =========================================================
+   PAUSE
+========================================================= */
+
+audioA.addEventListener(
+  "pause",
+  () => {
+
+    if (
+      activeAudio !== audioA
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      !audioA.ended
+    ) {
+
+      playing = false;
+
+      updatePlayUI();
+
+      updateVinyl();
+
+    }
+
+  }
+);
+
+
+audioB.addEventListener(
+  "pause",
+  () => {
+
+    if (
+      activeAudio !== audioB
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      !audioB.ended
+    ) {
+
+      playing = false;
+
+      updatePlayUI();
+
+      updateVinyl();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   TIME UPDATE
+========================================================= */
+
+audioA.addEventListener(
+  "timeupdate",
+  () => {
+
+    if (
+      activeAudio === audioA
+    ) {
+
+      updateSurahProgress();
+
+    }
+
+  }
+);
+
+
+audioB.addEventListener(
+  "timeupdate",
+  () => {
+
+    if (
+      activeAudio === audioB
+    ) {
+
+      updateSurahProgress();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   CALCULATE SURAH PROGRESS
+========================================================= */
+
+function updateSurahProgress() {
+
+  if (!surah) {
+    return;
+  }
+
+
+  /*
+   * We use the currently loaded
+   * ayah durations when available.
+   *
+   * This makes the player behave
+   * like a whole-Surah timeline.
+   */
+
+  let before = 0;
+
+
+  for (
+    let i = 0;
+    i < currentAyahIndex;
+    i++
+  ) {
+
+    if (
+      Number.isFinite(
+        surahDurations[i]
+      )
+    ) {
+
+      before +=
+        surahDurations[i];
+
+    }
+
+  }
+
+
+  const current =
+    Number.isFinite(
+      activeAudio.currentTime
+    )
+      ? activeAudio.currentTime
+      : 0;
+
+
+  const knownTotal =
+    surahDurations.reduce(
+      (
+        total,
+        duration
+      ) => {
+
+        return (
+          total +
+          (
+            Number.isFinite(
+              duration
+            )
+              ? duration
+              : 0
+          )
+        );
+
+      },
+      0
+    );
+
+
+  const total =
+    knownTotal > 0
+      ? knownTotal
+      : Math.max(
+          before +
+          (
+            Number.isFinite(
+              activeAudio.duration
+            )
+              ? activeAudio.duration
+              : 0
+          ),
+          1
+        );
+
+
+  const position =
+    before +
+    current;
+
+
+  const percentage =
+    Math.min(
+      100,
+      Math.max(
+        0,
+        (
+          position /
+          total
+        ) *
+        100
+      )
+    );
+
+
+  seekBar.value =
+    percentage;
+
+
+  currentTime.textContent =
+    formatTime(
+      position
+    );
+
+
+  remainingTime.textContent =
+    "-" +
+    formatTime(
+      Math.max(
+        0,
+        total - position
+      )
+    );
+
+
+  miniProgress.style.width =
+    percentage + "%";
+
+}
+
+
+/* =========================================================
+   STORE AYAH DURATION
+========================================================= */
+
+audioA.addEventListener(
+  "loadedmetadata",
+  () => {
+
+    if (
+      activeAudio === audioA
+    ) {
+
+      surahDurations[
+        currentAyahIndex
+      ] =
+        audioA.duration;
+
+      updateSurahProgress();
+
+      preloadNextAyah();
+
+    }
+
+  }
+);
+
+
+audioB.addEventListener(
+  "loadedmetadata",
+  () => {
+
+    if (
+      activeAudio === audioB
+    ) {
+
+      surahDurations[
+        currentAyahIndex
+      ] =
+        audioB.duration;
+
+      updateSurahProgress();
+
+      preloadNextAyah();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   SEEK WHOLE SURAH
+========================================================= */
+
+seekBar.addEventListener(
+  "input",
+  event => {
+
+    if (!surah) {
+      return;
+    }
+
+
+    /*
+     * Work out approximate position
+     * in the Surah.
+     */
+
+    let total =
+      surahDurations.reduce(
+        (
+          sum,
+          value
+        ) => {
+
+          return (
+            sum +
+            (
+              Number.isFinite(
+                value
+              )
+                ? value
+                : 0
+            )
+          );
+
+        },
+        0
+      );
+
+
+    if (
+      total <= 0
+    ) {
+
+      return;
+
+    }
+
+
+    const target =
+      (
+        Number(
+          event.target.value
+        ) /
+        100
+      ) *
+      total;
+
+
+    let accumulated =
+      0;
+
+
+    let targetIndex =
+      0;
+
+
+    for (
+      let i = 0;
+      i < surah.ayahs.length;
+      i++
+    ) {
+
+      const duration =
+        surahDurations[i] || 0;
+
+
+      if (
+        target <=
+        accumulated +
+        duration
+      ) {
+
+        targetIndex =
+          i;
+
+        break;
+
+      }
+
+
+      accumulated +=
+        duration;
+
+
+      targetIndex =
+        i;
+
+    }
+
+
+    const offset =
+      Math.max(
+        0,
+        target -
+        accumulated
+      );
+
+
+    playFromAyah(
+      targetIndex
+    ).then(
+      () => {
+
+        if (
+          Number.isFinite(
+            activeAudio.duration
+          )
+        ) {
+
+          activeAudio.currentTime =
+            Math.min(
+              offset,
+              activeAudio.duration
+            );
+
+        }
+
+      }
+    );
+
+  }
+);
+
+
+/* =========================================================
+   NEXT AYAH
 ========================================================= */
 
 function nextAyah() {
 
-  const next =
-    currentAyahIndex + 1;
-
-  if (
-    next >=
-    surah.ayahs.length
-  ) {
+  if (!surah) {
     return;
   }
 
-  loadAyahAudio(
-    next,
-    playing
-  );
+
+  const next =
+    currentAyahIndex + 1;
+
+
+  if (
+    next <
+    surah.ayahs.length
+  ) {
+
+    playFromAyah(
+      next
+    );
+
+  }
 
 }
 
 
-nextButton.addEventListener(
-  "click",
-  nextAyah
-);
-
-fullNextButton.addEventListener(
-  "click",
-  nextAyah
-);
-
-
 /* =========================================================
-   PREVIOUS
+   PREVIOUS AYAH
 ========================================================= */
 
 function previousAyah() {
 
+  if (!surah) {
+    return;
+  }
+
+
   if (
-    audio.currentTime > 3
+    activeAudio.currentTime >
+    3
   ) {
 
-    audio.currentTime =
+    activeAudio.currentTime =
       0;
 
     return;
@@ -920,141 +2043,23 @@ function previousAyah() {
 
 
   if (
-    previous < 0
+    previous >= 0
   ) {
 
-    audio.currentTime =
-      0;
-
-    return;
-
-  }
-
-
-  loadAyahAudio(
-    previous,
-    playing
-  );
-
-}
-
-
-previousButton.addEventListener(
-  "click",
-  previousAyah
-);
-
-fullPreviousButton.addEventListener(
-  "click",
-  previousAyah
-);
-
-
-/* =========================================================
-   SEEK
-========================================================= */
-
-function seek(value) {
-
-  if (
-    !audio.duration ||
-    !isFinite(audio.duration)
-  ) {
-    return;
-  }
-
-  audio.currentTime =
-    (
-      Number(value) /
-      100
-    ) *
-    audio.duration;
-
-}
-
-
-seekBar.addEventListener(
-  "input",
-  event =>
-    seek(
-      event.target.value
-    )
-);
-
-
-fullSeekBar.addEventListener(
-  "input",
-  event =>
-    seek(
-      event.target.value
-    )
-);
-
-
-/* =========================================================
-   TIMES
-========================================================= */
-
-function updateTimes() {
-
-  if (
-    !audio.duration ||
-    !isFinite(audio.duration)
-  ) {
-    return;
-  }
-
-
-  const percent =
-    (
-      audio.currentTime /
-      audio.duration
-    ) * 100;
-
-
-  seekBar.value =
-    percent;
-
-  fullSeekBar.value =
-    percent;
-
-
-  const current =
-    formatTime(
-      audio.currentTime
+    playFromAyah(
+      previous
     );
 
-
-  const remaining =
-    formatTime(
-      Math.max(
-        0,
-        audio.duration -
-        audio.currentTime
-      )
-    );
-
-
-  currentTimeEl.textContent =
-    current;
-
-  fullCurrentTime.textContent =
-    current;
-
-  remainingTimeEl.textContent =
-    `-${remaining}`;
-
-  fullRemainingTime.textContent =
-    `-${remaining}`;
+  }
 
 }
 
 
 /* =========================================================
-   HIGHLIGHT
+   AYAH UI
 ========================================================= */
 
-function highlightAyah(index) {
+function updateAyahUI() {
 
   document
     .querySelectorAll(
@@ -1072,7 +2077,10 @@ function highlightAyah(index) {
 
 
   const ayah =
-    surah.ayahs[index];
+    surah?.ayahs?.[
+      currentAyahIndex
+    ];
+
 
   if (!ayah) {
     return;
@@ -1081,7 +2089,8 @@ function highlightAyah(index) {
 
   const element =
     document.getElementById(
-      `ayah-${ayah.numberInSurah}`
+      "ayah-" +
+      ayah.numberInSurah
     );
 
 
@@ -1093,6 +2102,10 @@ function highlightAyah(index) {
   element.classList.add(
     "active"
   );
+
+
+  currentAyahLabel.textContent =
+    `Ayah ${ayah.numberInSurah} of ${surah.numberOfAyahs}`;
 
 
   if (playing) {
@@ -1108,109 +2121,90 @@ function highlightAyah(index) {
 
 
 /* =========================================================
-   REPEAT AYAH
+   PLAY BUTTON
 ========================================================= */
 
-function updateRepeatUI() {
+function updatePlayUI() {
 
-  repeatLabel.textContent =
-    repeatAyah
-      ? "Ayah"
-      : "Off";
+  const icon =
+    playing
+      ? "pause"
+      : "play";
+
+
+  playButton.innerHTML = `
+
+    <i
+      data-lucide="${icon}"
+      class="h-5 w-5"
+    ></i>
+
+  `;
+
+
+  fullPlayButton.innerHTML = `
+
+    <i
+      data-lucide="${icon}"
+      class="h-7 w-7"
+    ></i>
+
+  `;
+
+
+  lucide.createIcons();
+
+}
+
+
+/* =========================================================
+   VINYL
+========================================================= */
+
+function updateVinyl() {
+
+  miniDisc.classList.toggle(
+    "spinning",
+    playing
+  );
+
+
+  fullDisc.classList.toggle(
+    "spinning",
+    playing
+  );
+
+}
+
+
+/* =========================================================
+   REPEAT SURAH
+========================================================= */
+
+function toggleRepeat() {
+
+  repeatSurah =
+    !repeatSurah;
 
 
   repeatButton.classList.toggle(
     "text-emerald-400",
-    repeatAyah
+    repeatSurah
   );
 
 
-  fullRepeatButton.classList.toggle(
-    "border-emerald-500",
-    repeatAyah
+  repeatButton.classList.toggle(
+    "border-emerald-400",
+    repeatSurah
   );
 
 
-  fullRepeatButton.classList.toggle(
-    "bg-emerald-500/10",
-    repeatAyah
-  );
+  repeatLabel.textContent =
+    repeatSurah
+      ? "Repeat Surah on"
+      : "Repeat off";
 
 }
-
-
-function toggleRepeat(
-  event
-) {
-
-  /*
-   * Prevent the button from
-   * accidentally opening another
-   * player control.
-   */
-
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-
-  repeatAyah =
-    !repeatAyah;
-
-
-  updateRepeatUI();
-
-}
-
-
-repeatButton.addEventListener(
-  "click",
-  toggleRepeat
-);
-
-fullRepeatButton.addEventListener(
-  "click",
-  toggleRepeat
-);
-
-
-/*
- * Extra touch support for Android.
- */
-
-repeatButton.addEventListener(
-  "touchend",
-  event => {
-
-    event.preventDefault();
-
-    toggleRepeat(
-      event
-    );
-
-  },
-  {
-    passive: false
-  }
-);
-
-
-fullRepeatButton.addEventListener(
-  "touchend",
-  event => {
-
-    event.preventDefault();
-
-    toggleRepeat(
-      event
-    );
-
-  },
-  {
-    passive: false
-  }
-);
 
 
 /* =========================================================
@@ -1226,15 +2220,7 @@ const speeds = [
 ];
 
 
-function changeSpeed(
-  event
-) {
-
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
+function changeSpeed() {
 
   const current =
     speeds.indexOf(
@@ -1242,207 +2228,131 @@ function changeSpeed(
     );
 
 
-  const next =
-    (
-      current + 1
-    ) %
-    speeds.length;
-
-
   playbackSpeed =
-    speeds[next];
+    speeds[
+      (
+        current + 1
+      ) %
+      speeds.length
+    ];
 
 
-  audio.playbackRate =
+  audioA.playbackRate =
+    playbackSpeed;
+
+
+  audioB.playbackRate =
     playbackSpeed;
 
 
   speedLabel.textContent =
-    `${playbackSpeed}×`;
+    playbackSpeed +
+    "×";
 
 }
-
-
-speedButton.addEventListener(
-  "click",
-  changeSpeed
-);
-
-
-speedButton.addEventListener(
-  "touchend",
-  event => {
-
-    event.preventDefault();
-
-    changeSpeed(
-      event
-    );
-
-  },
-  {
-    passive: false
-  }
-);
 
 
 /* =========================================================
    RECITER
 ========================================================= */
 
-function changeReciter() {
-
-  const selected =
-    reciterSelect.value;
-
-
-  if (!selected) {
-    return;
-  }
+reciterSelect.value =
+  reciters[reciter]
+    ? reciter
+    : "Alafasy_128kbps";
 
 
-  reciter =
-    selected;
+reciterSelect.addEventListener(
+  "change",
+  async () => {
 
+    reciter =
+      reciterSelect.value;
 
-  const name =
-    reciterNames[
-      reciter
-    ] ||
-    "Quran Reciter";
-
-
-  audioSubtitle.textContent =
-    name;
-
-
-  fullPlayerReciter.textContent =
-    name;
-
-
-  /*
-   * Remember the selected reciter.
-   */
-
-  try {
 
     localStorage.setItem(
       "quran_reciter",
       reciter
     );
 
-  } catch (error) {
 
-    console.warn(
-      "Could not save reciter",
-      error
+    const wasPlaying =
+      !activeAudio.paused;
+
+
+    const position =
+      activeAudio.currentTime;
+
+
+    await playFromAyah(
+      currentAyahIndex
     );
 
-  }
+
+    const restorePosition =
+      () => {
+
+        if (
+          Number.isFinite(
+            activeAudio.duration
+          )
+        ) {
+
+          activeAudio.currentTime =
+            Math.min(
+              position,
+              activeAudio.duration
+            );
+
+        }
 
 
-  /*
-   * Keep the same ayah.
-   */
+        if (!wasPlaying) {
 
-  const wasPlaying =
-    playing;
+          activeAudio.pause();
 
+        }
 
-  loadAyahAudio(
-    currentAyahIndex,
-    wasPlaying
-  );
-
-}
-
-
-reciterSelect.addEventListener(
-  "change",
-  changeReciter
-);
-
-
-/*
- * Some Android browsers don't fire
- * change until the select closes.
- *
- * Input gives us an additional
- * reliable event.
- */
-
-reciterSelect.addEventListener(
-  "input",
-  changeReciter
-);
-
-
-/* =========================================================
-   LOAD SAVED RECITER
-========================================================= */
-
-function loadSavedReciter() {
-
-  try {
-
-    const saved =
-      localStorage.getItem(
-        "quran_reciter"
-      );
+      };
 
 
     if (
-      saved &&
-      reciterNames[saved]
+      activeAudio.readyState >= 1
     ) {
 
-      reciter =
-        saved;
+      restorePosition();
 
-      reciterSelect.value =
-        saved;
+    } else {
+
+      activeAudio.addEventListener(
+        "loadedmetadata",
+        restorePosition,
+        {
+          once: true
+        }
+      );
 
     }
 
-  } catch (error) {
 
-    console.warn(
-      "Could not load saved reciter"
-    );
+    updateTitles();
 
   }
-
-
-  const name =
-    reciterNames[
-      reciter
-    ];
-
-
-  audioSubtitle.textContent =
-    name;
-
-  fullPlayerReciter.textContent =
-    name;
-
-}
+);
 
 
 /* =========================================================
-   PLAYER OPEN
+   OPEN PLAYER
 ========================================================= */
 
-function openPlayer(
-  event
-) {
-
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
+function openPlayer() {
 
   playerSheet.classList.remove(
+    "hidden"
+  );
+
+
+  playerOverlay.classList.remove(
     "hidden"
   );
 
@@ -1451,7 +2361,12 @@ function openPlayer(
     () => {
 
       playerSheet.classList.add(
-        "open"
+        "player-open"
+      );
+
+
+      playerOverlay.classList.add(
+        "overlay-open"
       );
 
     }
@@ -1460,18 +2375,19 @@ function openPlayer(
 }
 
 
-function closePlayer(
-  event
-) {
+/* =========================================================
+   CLOSE PLAYER
+========================================================= */
 
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
+function closePlayer() {
 
   playerSheet.classList.remove(
-    "open"
+    "player-open"
+  );
+
+
+  playerOverlay.classList.remove(
+    "overlay-open"
   );
 
 
@@ -1482,119 +2398,122 @@ function closePlayer(
         "hidden"
       );
 
+
+      playerOverlay.classList.add(
+        "hidden"
+      );
+
     },
-    250
+    300
   );
 
 }
 
 
-openPlayerButton.addEventListener(
+/* =========================================================
+   EVENTS
+========================================================= */
+
+playButton.addEventListener(
   "click",
-  openPlayer
+  togglePlay
 );
 
 
-openPlayerButton2.addEventListener(
+fullPlayButton.addEventListener(
   "click",
-  openPlayer
+  togglePlay
 );
 
 
-closePlayerButton.addEventListener(
+previousButton.addEventListener(
+  "click",
+  previousAyah
+);
+
+
+fullPreviousButton.addEventListener(
+  "click",
+  previousAyah
+);
+
+
+nextButton.addEventListener(
+  "click",
+  nextAyah
+);
+
+
+fullNextButton.addEventListener(
+  "click",
+  nextAyah
+);
+
+
+repeatButton.addEventListener(
+  "click",
+  toggleRepeat
+);
+
+
+speedButton.addEventListener(
+  "click",
+  changeSpeed
+);
+
+
+document
+  .getElementById(
+    "openPlayerButton"
+  )
+  .addEventListener(
+    "click",
+    openPlayer
+  );
+
+
+document
+  .getElementById(
+    "openPlayerButton2"
+  )
+  .addEventListener(
+    "click",
+    openPlayer
+  );
+
+
+document
+  .getElementById(
+    "closePlayerButton"
+  )
+  .addEventListener(
+    "click",
+    closePlayer
+  );
+
+
+playerOverlay.addEventListener(
   "click",
   closePlayer
 );
 
 
-/* =========================================================
-   PLAY ICON
-========================================================= */
-
-function updatePlayButtons() {
-
-  const icon =
-    playing
-      ? "pause"
-      : "play";
-
-
-  playButton.innerHTML = `
-
-    <i
-      data-lucide="${icon}"
-      class="
-        h-5
-        w-5
-        ${playing ? "" : "fill-current"}
-      "
-    ></i>
-
-  `;
-
-
-  fullPlayButton.innerHTML = `
-
-    <i
-      data-lucide="${icon}"
-      class="
-        h-7
-        w-7
-        ${playing ? "" : "fill-current"}
-      "
-    ></i>
-
-  `;
-
-
-  lucide.createIcons();
-
-}
-
-
-/* =========================================================
-   FORMAT TIME
-========================================================= */
-
-function formatTime(seconds) {
-
-  if (
-    !seconds ||
-    !isFinite(seconds)
-  ) {
-    return "0:00";
-  }
-
-
-  const minutes =
-    Math.floor(
-      seconds / 60
-    );
-
-
-  const remaining =
-    Math.floor(
-      seconds % 60
-    );
-
-
-  return (
-    `${minutes}:` +
-    `${String(
-      remaining
-    ).padStart(
-      2,
-      "0"
-    )}`
+document
+  .getElementById(
+    "backButton"
+  )
+  .addEventListener(
+    "click",
+    () => history.back()
   );
-
-}
 
 
 /* =========================================================
    START
 ========================================================= */
 
-loadSavedReciter();
+lucide.createIcons();
+
+updateTitles();
 
 loadSurah();
